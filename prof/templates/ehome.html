@@ -7,7 +7,7 @@
 <table cellspacing="20%">
 <tr><td><h3>Nom du QCM</h3></td><td><h3>Note</h3></td></tr>
 {% for cp in listecps %}
-<tr><td>QCM {{ cp.nom }}:</td><td>{{ cp.note }}</td><td>
+<tr><td>{{ cp.nom }}</td><td>{{ cp.note }}</td><td>
 <form action="{% url 'prof.views.ehome' %}" method="post">
     {% csrf_token %}
     {% if not cp.jpg %}{{ cp.formMI }}{% endif %}

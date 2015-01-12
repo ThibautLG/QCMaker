@@ -52,6 +52,10 @@ class QCMChoix(forms.Form):
 		
 	qcm = forms.ChoiceField(label="Liste de vos QCM")
 
+class Note(forms.Form):
+	note = forms.FloatField(label="")
+	copiecorrigeeid = forms.IntegerField(widget=forms.HiddenInput())
+
 class NouveauQCM(forms.Form):
 	titre = forms.CharField(max_length=100,label="Nouveau QCM")
 

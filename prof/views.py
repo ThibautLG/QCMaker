@@ -325,11 +325,11 @@ def home(request):
 			td=Exo.objects.get(id=formFDel.cleaned_data['fexo'])
 			td.delete()
 			
-	formFDel=EffacerFExo()
+	formFDel = EffacerFExo()
 	formNQCM = NouveauQCM()
 	formNExos = NouveauxExos()
-	listeqcms=pr.qcm_set.all()
-	listeChoix=list()
+	listeqcms = pr.qcm_set.all()
+	listeChoix = list()
 	for qcm in listeqcms:
 		listeChoix.append((qcm.nom,qcm.nom))
 	formChoix = QCMChoix()
@@ -496,6 +496,8 @@ def qcmanage(request):
 		formCorr = Corriger(request.POST)
 		formMontrerIm = MontrerImage(request.POST)
 		formEffCopie = EffacerCopie(request.POST)
+		formNote = Note(request.POST)
+		print(request.POST)
 		if formTelecharger.is_valid():
 			qcmpdf=QcmPdf.objects.get(fichier=formTelecharger.cleaned_data['fichieratel'])
 			if not qcmpdf.traite:
@@ -515,7 +517,12 @@ def qcmanage(request):
 		elif formEffCopie.is_valid():
 			print(formEffCopie.cleaned_data['cpid'])
 			CopieCorrigee.objects.get(id=formEffCopie.cleaned_data['cpid']).delete()
-			
+		elif formNote.is_valid():
+			print('changement de note')
+			cc=CopieCorrigee.objects.get(id=formNote.cleaned_data['copiecorrigeeid'])		
+			cc.note=formNote.cleaned_data['note']
+			cc.save()
+			print('shit')
 			
 			
 	
@@ -541,10 +548,11 @@ def qcmanage(request):
 		listecjpgtemp=list()
 		formtemp=MontrerImage(initial={'montrerimage':cp.id})
 		tform=EffacerCopie(initial={'cpid':cp.id})
+		tformNote=Note(initial={'note':cp.note,'copiecorrigeeid':cp.id})
 		if mi_id == cp.id:
 			for ccc in cp.copiejpg_set.all():
 				listecjpgtemp.append(ccc.id)
-		listecps.append({'id':cp.id,'note':cp.note,'nom':cp.eleve.nom,'jpg':listecjpgtemp,'formMI':formtemp,'formEffCopie':tform})
+		listecps.append({'id':cp.id,'note':cp.note,'nom':cp.eleve.nom,'jpg':listecjpgtemp,'formMI':formtemp,'formEffCopie':tform,'formNote':tformNote})
 		
 	#on remplit la liste des copies
 	listecopiestemp=Copies.objects.filter(qcm=qcm)

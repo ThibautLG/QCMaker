@@ -7,7 +7,17 @@
 <table cellspacing="20%">
 <tr><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
 {% for cp in listecps %}
-<tr><td><a name="{{ cp.id }}">{{ cp.nom }}:</td><td>{{ cp.note }}</td><td>
+<tr><td><a name="{{ cp.id }}">{{ cp.nom }}:</td><td>
+<form action="{% url 'prof.views.qcmanage' %}" method="post">
+
+{% csrf_token %}
+<table>
+{{ cp.formNote }}
+</table>
+</td><td>
+<input type="submit" name='hidden' value="MAJ Note">
+</form>
+</td><td>
 <form action="{% url 'prof.views.qcmanage' %}#{{ cp.id }}" method="post">
     {% csrf_token %}
     {% if not cp.jpg %}{{ cp.formMI }}{% endif %}
