@@ -544,6 +544,12 @@ def qcmanage(request):
 	#creation de la liste des copies corrigées
 	listecps=list()
 	listecjpgtemp=list()
+	codes=range(100000)
+	random.seed(float('0.'+str(qcm.id)))
+	random.shuffle(codes)
+	random.shuffle(codes)
+	random.shuffle(codes)
+
 	for cp in CopieCorrigee.objects.filter(qcm=qcm):
 		listecjpgtemp=list()
 		formtemp=MontrerImage(initial={'montrerimage':cp.id})
@@ -552,7 +558,7 @@ def qcmanage(request):
 		if mi_id == cp.id:
 			for ccc in cp.copiejpg_set.all():
 				listecjpgtemp.append(ccc.id)
-		listecps.append({'id':cp.id,'note':cp.note,'nom':cp.eleve.nom,'jpg':listecjpgtemp,'formMI':formtemp,'formEffCopie':tform,'formNote':tformNote})
+		listecps.append({'id':cp.id,'note':cp.note,'nom':cp.eleve.nom,'jpg':listecjpgtemp,'formMI':formtemp,'formEffCopie':tform,'formNote':tformNote,'code':codes[cp.numero]})
 		
 	#on remplit la liste des copies
 	listecopiestemp=Copies.objects.filter(qcm=qcm)

@@ -4,10 +4,11 @@
 <h2>QCM {{ qcm.nom }}<br></h2>
 {{ qcm.nomTeX }}
 {% if listecps %}
-<table cellspacing="20%">
-<tr><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
+<br><br>
+<table cellspacing="20%" class="tableaunotes">
+<tr><td><h3>N° copie</h3></td><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
 {% for cp in listecps %}
-<tr><td><a name="{{ cp.id }}">{{ cp.nom }}:</td><td>
+<tr><td>{{ cp.code }}</td><td><a name="{{ cp.id }}">{{ cp.nom }}</td><td>
 <form action="{% url 'prof.views.qcmanage' %}" method="post">
 
 {% csrf_token %}
@@ -29,7 +30,7 @@
 <input type="submit" value="X" />
 </form>
 </td></tr>
-<tr><td>
+<tr><td colspan="4">
 	{% for cjpg in cp.jpg %}
 	<a href="{% url 'prof.views.image' cjpg %}">
 	<img src="{% url 'prof.views.image' cjpg %}" style="height:228px"></a>
