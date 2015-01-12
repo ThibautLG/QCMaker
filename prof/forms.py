@@ -26,6 +26,9 @@ class EffacerFExo(forms.Form):
 class Effacer(forms.Form):
 	fichieraeff = forms.CharField(label="Fichier",widget=forms.HiddenInput())
 	
+class TelechargerNotes(forms.Form):
+	generernotes = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
+
 class AjoutTemplate(forms.Form):
 	def setFields(self,qcm):
 		self.fields['nomTeX'] = forms.CharField(max_length=100,label="Sujet",initial=qcm.nomTeX)

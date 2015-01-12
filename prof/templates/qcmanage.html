@@ -5,6 +5,12 @@
 {{ qcm.nomTeX }}
 {% if listecps %}
 <br><br>
+<form action="{% url 'prof.views.qcmanage' %}" method="post">
+    {% csrf_token %}
+    {{ formGenNotes }}	
+<input type="submit" value="Télécharger les notes" />
+</form>
+<br>
 <table cellspacing="20%" class="tableaunotes">
 <tr><td><h3>N° copie</h3></td><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
 {% for cp in listecps %}

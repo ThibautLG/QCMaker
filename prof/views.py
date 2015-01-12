@@ -21,6 +21,25 @@ def is_prof(nom):
 	else:
 		return False
 
+def genererCSVnotes(qcm):
+	dossier=os.path.dirname(qcm.template.path)+"/"
+	codes=range(100000)
+	random.seed(float('0.'+str(qcm.id)))
+	random.shuffle(codes)
+	random.shuffle(codes)
+	random.shuffle(codes)
+	listecopies=qcm.copiecorrigee_set.all()
+	fichierCSV=io.FileIO(dossier+"notes.csv",'w')
+	for copie in listecopies:
+		print(str(copie.numero))
+		print(","+copie.eleve.nom+","+str(copie.note))
+
+		fichierCSV.write(str(codes[copie.numero])+","+copie.eleve.nom.encode('ascii','replace')+","+str(copie.note))
+		fichierCSV.write("\n")
+	fichierCSV.close()
+	return str(dossier+"notes.csv")
+	
+
 def importoriginaux(qcmpdf):
 	dossier=os.path.dirname(qcmpdf.qcm.template.path)+"/"
 	conf=qcmi.ConfigurationImport(dossier)
@@ -73,18 +92,25 @@ def correction(cps):
 			
 	listeCodes=[o[0].code for o in originaux]
 	eleveinconnu,creation=Eleve.objects.get_or_create(nom="Élève non associé")
+	copiesasupprimer=list()
 	for copie in copies:
 		try:
-			cc=CopieCorrigee(copies=cps,numero=int(copie[0].code,2),eleve=eleveinconnu,qcm=cps.qcm)
-			cc.save()
-			for i in range(len(copie)):
-				copie[i].compare(originaux[listeCodes.index(copie[i].code)][i])
-				ccjpg=CopieJPG(copiecorrigee=cc,fichier=copie[i].imgFichier)
-				ccjpg.save()
+			if not CopieCorrigee.objects.filter(numero=int(copie[0].code,2),qcm=cps.qcm):
+				cc=CopieCorrigee(copies=cps,numero=int(copie[0].code,2),eleve=eleveinconnu,qcm=cps.qcm)
+				cc.save()
+				for i in range(len(copie)):
+					copie[i].compare(originaux[listeCodes.index(copie[i].code)][i])
+					ccjpg=CopieJPG(copiecorrigee=cc,fichier=copie[i].imgFichier)
+					ccjpg.save()
+			else:
+				copiesasupprimer.append(copie)
 		except:
 			print('Erreur de correction')
-			copies.remove(copie)
-			
+			copiesasupprimer.append(copie)
+	
+	for copie in copiesasupprimer:
+		copies.remove(copie)
+	
 	listeRep=list()
 	for i in range(len(copies)):
 		listeRep.append([copies[i][0].code,"".join(copies[i][0].reponses)])
@@ -468,10 +494,6 @@ def qcmaker(request):
 		listexosqcm.append({'nom':nb.exo.nom,'nb':nb.nbexos,'formDel':tform})
 	formNTemplate = AjoutTemplate()
 	formNTemplate.setFields(qcm)
-	formTelecharger = Telecharger()
-	formTelecharger.fields['fichieratel'] = forms.CharField(label="Fichier",initial="template",widget=forms.HiddenInput())
-	formEffacer = Effacer()
-	formEffacer.fields['fichieraeff'] = forms.CharField(label="Fichier",initial="template",widget=forms.HiddenInput())
 	formGenerer = Generer()
 	formNExos = NouveauxExos()
 	
@@ -497,7 +519,7 @@ def qcmanage(request):
 		formMontrerIm = MontrerImage(request.POST)
 		formEffCopie = EffacerCopie(request.POST)
 		formNote = Note(request.POST)
-		print(request.POST)
+		formGenNotes = TelechargerNotes(request.POST)
 		if formTelecharger.is_valid():
 			qcmpdf=QcmPdf.objects.get(fichier=formTelecharger.cleaned_data['fichieratel'])
 			if not qcmpdf.traite:
@@ -508,21 +530,22 @@ def qcmanage(request):
 			cps.save()
 		elif formCorr.is_valid():
 			cps=Copies.objects.get(id=formCorr.cleaned_data['ccorr'])
-			try:
-				correction(cps)
-			except:
-				Copies.objects.get(id=formCorr.cleaned_data['ccorr']).delete()
+			#try:
+			correction(cps)
+			#except Exception, er:
+			#	print("Erreur : ",er)
+			#	Copies.objects.get(id=formCorr.cleaned_data['ccorr']).delete()
 		elif formMontrerIm.is_valid():
 			mi_id=formMontrerIm.cleaned_data['montrerimage']
 		elif formEffCopie.is_valid():
 			print(formEffCopie.cleaned_data['cpid'])
 			CopieCorrigee.objects.get(id=formEffCopie.cleaned_data['cpid']).delete()
 		elif formNote.is_valid():
-			print('changement de note')
 			cc=CopieCorrigee.objects.get(id=formNote.cleaned_data['copiecorrigeeid'])		
 			cc.note=formNote.cleaned_data['note']
 			cc.save()
-			print('shit')
+		elif formGenNotes.is_valid():
+			return telecharger(request,genererCSVnotes(qcm))
 			
 			
 	
@@ -567,6 +590,8 @@ def qcmanage(request):
 		tform=Corriger(initial={'ccorr':cp.id})
 		print(cp.nom,cp.corrigees)
 		listecopies.append({'nom':cp.nom,'corrigee':cp.corrigees,'formCor':tform})
+
+	formGenNotes = TelechargerNotes()
 	formAjoutCopies = AjoutCopies()
 					
 	return render(request, 'qcmanage.html', locals())
