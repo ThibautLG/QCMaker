@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>{% comment %}{% endcomment %}
+<link rel="shortcut icon" href="https://www.centrale-marseille.fr/sites/www/files/favicon.png" type="image/png" />
+   <link rel="stylesheet" href="{% static 'style.css' %}" /> 
+   <title>{% block title %}QCMaker{% endblock %}</title>
+</head>
+<body>
+<header><table width="100%"><tr><td width="17%"></td><td><h1>{% block bienvenue %}QCM <a href="{% url 'prof.views.home' %}">  {% if pr %} {{ pr.nom }} {% endif %}{% if el %} {{ el.nom }} {% endif %}</a>{% endblock %}</h1></td><td width="10%"><a href="{% url 'django_cas.views.logout' %}">Déconnexion</a></td></tr></table></header>
+
+		<section class="content">
+       {% block content %}{% endblock %}
+		</section>
+  
+
+</body>
+</html>

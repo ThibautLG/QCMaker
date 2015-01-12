@@ -1,0 +1,51 @@
+\nonstopmode
+\documentclass[twoside,11pt]{article}
+\usepackage{amsmath,amssymb}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\frenchbsetup{StandardLists=true}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{refcount}
+
+\AtEndDocument{\clearpage\ifodd\value{page}\else\null\clearpage\fi}
+\oddsidemargin -1cm
+\evensidemargin 0cm
+\setlength{\topmargin}{-1.5cm}
+\setlength{\textheight}{25cm}
+\setlength{\textwidth}{17cm}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[R]{
+%%%codeExo
+~$\clubsuit$
+}
+\fancyhead[LO]{NOM Prénom:      }
+\fancyhead[LE]{}
+\fancyfoot[L]{$\spadesuit$}
+\fancyfoot[R]{\Huge$\star$}
+\fancyfoot[C]{page \thepage}
+
+\theoremstyle{definition}
+\newtheorem{exo}{Exercice}
+
+
+
+\begin{document} 
+
+\centerline{\bf{
+%%%nomQCM
+}}
+
+\medskip
+%%%texteQCM
+\bigskip
+
+%%%exos
+
+\end{document} 
+ 
+ 
+ 

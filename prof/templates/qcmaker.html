@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>QCM {{ qcm.nom }}<br></h2> 
+
+{% if listexosqcm %}
+<form action="{% url 'prof.views.qcmaker' %}" method="post">
+    {% csrf_token %}
+	{{ formGenerer }}<input type="submit" value="Générer pdfs" />
+</form>
+{% endif %}
+<form action="{% url 'prof.views.qcmaker' %}" method="post">
+	<table><tr><td>
+    {% csrf_token %}
+	{{ formNTemplate.as_p }} {{ form.error }}</td><td><input type="submit" value="Enregistrer" /></td></tr></table>
+</form>
+{% if qcm.template %}
+<h2>Composition du QCM<br></h2>
+<table>
+{% for exo in listexosqcm %}
+<tr><td>
+    {{ exo.nb }} exerice{{ exo.nb|pluralize }} de {{ exo.nom }}</td><td></td><td><form action="{% url 'prof.views.qcmaker' %}" method="post">
+    {% csrf_token %}
+	{{ exo.formDel }}<input type="submit" value="X" />
+</form></td></tr>
+{% endfor %}
+</table>
+<br>
+
+<h2>Exercices disponibles<br></h2>
+{% if listexos %}
+<form action="{% url 'prof.views.qcmaker' %}" method="post">
+    {% csrf_token %}
+	{{ formExoChoix }}<input type="submit" value="Ajouter" />
+</form>
+{% endif %}
+<form action="{% url 'prof.views.qcmaker' %}" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ formNExos }} <input type="submit" value="Ajouter" />
+</form>
+
+{% endif %}
+
+{% endblock %}
