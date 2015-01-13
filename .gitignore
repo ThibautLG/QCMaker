@@ -1,5 +1,8 @@
+*/*.dist
 *.pyc
 db.sqlite3
 manage.py
 media/*
 *.swp
+*/#*#
+*/.#*

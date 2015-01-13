@@ -3,8 +3,6 @@
 import numpy as np
 import cv2
 import io
-import matplotlib.cm as cm
-from matplotlib import pyplot as plt
 import pickle
 import os
 import subprocess as sp
@@ -63,8 +61,6 @@ class Copie():
 		loc = np.where( res >= max_val)
 		loc = zip(*loc[::-1])
 		ret=(loc[0][0]+self.conf.zones[i][0][0],loc[0][1]+self.conf.zones[i][1][0])
-		#plt.imshow(self.img[ret[1]:ret[1]+60,ret[0]:ret[0]+60],cmap="gray")
-		#plt.show()
 		return ret
 		
 	#recherche le séparateur entre le code en 01010 et celui d'avant. Utilisé pour trouver l'image du code
@@ -90,12 +86,7 @@ class Copie():
 		self.imgCode=self.img[locCode[1]:locCode[1]+h,locCode[0]+w:self.pts[0][0]]
 
 		
-	#plot, pour le debug
-	def plot(self):
-		
-		plt.imshow(self.img[:,:selF.conf.dl],cmap = 'gray')
-		plt.show()
-
+	
 #classe pour les versions originales
 class Original(Copie):
 	

@@ -15,5 +15,5 @@ setup(
         "Intended Audience :: Teacher",
         "Programming Language :: Python :: ",
     ],
-    requires=['django', 'matplotlib','numpy'],
+    requires=['django', 'numpy'],
 )
