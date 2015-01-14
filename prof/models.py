@@ -3,6 +3,8 @@
 from django.db import models
 from datetime import datetime
 from django.core.files.storage import FileSystemStorage
+import shutil,os
+
 
 # Create your models here.
 class Enseignant(models.Model):
@@ -38,6 +40,15 @@ class Qcm(models.Model):
 	texteTeX=models.CharField(max_length=2000,default="\\centerline{Durée 30 minutes}\n\\medskip \n{\\it \n\\noindent\\underline{La correction est automatisée, noircir les cases des réponses justes et laisser vides les autres cases.} \\\ \nAucun document autorisé, téléphones portables et calculatrices interdits.\\\ \nUn seule réponse juste par exercice. \\\ \nBarème: réponse juste = 1pt, réponse fausse  = -0.5pt \n}")
 	template=models.FileField(upload_to=renommage, verbose_name="Template")
 	nmax=models.IntegerField(default=0)
+
+	def delete(self, *args, **kwargs):
+		try:
+			shutil.rmtree(os.path.dirname(self.template.path))
+			super(Qcm, self).delete(*args, **kwargs) # Call the "real" save() method.
+		except Exception, er:
+			print('Impossible de supprimer le dossier du QCM:',er)
+		
+
 	def __str__(self):
 		return self.nom
 
