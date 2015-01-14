@@ -282,10 +282,7 @@ def ehome(request):
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
 	el,nouveleleve=Eleve.objects.get_or_create(nom=nom)
-	try:
-		mi_id=request.session['mi_id']
-	except:
-		mi_id=-1
+	mi_id=-1
 	if request.method == 'POST':
 		formAssign=AssignerCopie(request.POST)
 		formMontrerIm=MontrerImage(request.POST)
