@@ -62,7 +62,7 @@ AUTHENTICATION_BACKENDS = (
 
 # CAS_SERVER_URL = 'https://dgeo.sysadm.ec-m.fr/cas/p3/'
 CAS_SERVER_URL = 'https://auth.centrale-marseille.fr/cas/'
-CAS_VERSION = '3'
+CAS_VERSION = '2'
 
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
