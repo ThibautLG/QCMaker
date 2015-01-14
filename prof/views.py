@@ -355,7 +355,7 @@ def home(request):
 	formFDel = EffacerFExo()
 	formNQCM = NouveauQCM()
 	formNExos = NouveauxExos()
-	listeqcms = pr.qcm_set.all()
+	listeqcms = sorted(pr.qcm_set.all(), key=lambda r: int(r.id),reverse=True)
 	listeChoix = list()
 	for qcm in listeqcms:
 		listeChoix.append((qcm.nom,qcm.nom))
