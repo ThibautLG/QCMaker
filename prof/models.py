@@ -14,7 +14,8 @@ class Exo(models.Model):
 	def renommage(instance, nom):
 		#nom_fichier = os.path.splitext(nom)[0] # on retire l'extension
 		instance.nom=nom
-		return("ups/"+instance.prof.nom+"/"+nom)
+		print(instance.id)
+		return("ups/"+str(instance.prof.id)+"/"+str(instance.id)+".exos")
 		
 	prof = models.ForeignKey(Enseignant)
 	fichier = models.FileField(upload_to=renommage, verbose_name="Exos")
@@ -25,7 +26,7 @@ class Exo(models.Model):
 	
 class Qcm(models.Model):
 	def renommage(instance, nom):
-		return("ups/"+instance.prof.nom+"/"+instance.nom+"/template.tex")
+		return("ups/"+str(instance.prof.id)+"/"+str(instance.id)+"/template.tex")
 		
 	prof=models.ForeignKey(Enseignant)
 	nom=models.CharField(max_length=200)
@@ -56,7 +57,7 @@ class Eleve(models.Model):
 	
 class Copies(models.Model):
 	def renommage(instance, nom):
-		return("ups/"+instance.qcm.prof.nom+"/"+instance.qcm.nom+"/copies/"+nom)
+		return("ups/"+str(instance.qcm.prof.id)+"/"+str(instance.qcm.id)+"/copies/"+nom)
 	qcm = models.ForeignKey(Qcm)
 	fichier = models.FileField(upload_to=renommage, verbose_name="Copies")
 	corrigees=models.BooleanField(default=0)

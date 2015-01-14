@@ -26,6 +26,9 @@ pip install https://bitbucket.org/cpcc/django-cas/get/47d19f3a871f.zip
 En plus, la version d'open-cv installée est:
 Rev: 4557
 
+Il faut aussi pdfunite:
+pdfunite version 0.18.4
+
 Il faut aussi pdflatex:
 pdfTeX 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian)
 
