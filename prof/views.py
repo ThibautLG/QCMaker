@@ -341,7 +341,6 @@ def home(request):
 	nom=str(request.user.username)
 	if not is_prof(nom):
 		return redirect('prof.views.ehome')
-		
 	pr,nouveauprof=Enseignant.objects.get_or_create(nom=nom)
 	if request.method == 'POST':
 		formNExos = NouveauxExos(request.POST,request.FILES)
@@ -371,7 +370,6 @@ def home(request):
 		tform=EffacerFExo(initial={'fexo':fexo.id})
 		listexos.append({'nom':fexo.nom,'formFDel':tform})
 		
-	request.session['prof']=nom
 	return render(request, 'home.html', locals())
 
 def qcmaker(request):
