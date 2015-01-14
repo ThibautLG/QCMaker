@@ -11,8 +11,10 @@ import pickle
 import qcmimport as qcmi
 import qcmcorrecteur as qcmc
 from django.core.files import File
-#from django.contrib.auth import authenticate, login
 import random
+from django_rq import job
+
+
 
 def is_prof(nom):
 	listeprof=['tle-gouic','jliandrat','cpouet','gchiavassa']
@@ -20,6 +22,7 @@ def is_prof(nom):
 		return True
 	else:
 		return False
+
 
 def genererCSVnotes(qcm):
 	dossier=os.path.dirname(qcm.template.path)+"/"
@@ -62,80 +65,83 @@ def importoriginaux(qcmpdf):
 	qcmpdf.traite=True
 	qcmpdf.save()
 
+@job
 def correction(cps):
 	
-	dossier=os.path.dirname(cps.qcm.template.path)
-	os.mkdir(dossier+"/copies/"+str(cps.id))
-	sp.check_call(["convert", "-density", '200', cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
-	listepickle=[x for x in os.listdir(dossier+"/originaux") if x.endswith('.pickle')]
-	originaux=list()
-	for p in listepickle:
-		with open(dossier+"/originaux/"+p) as f:
-			originaux += pickle.load(f)
-	
-	
-	conf=qcmi.ConfigurationImport(dossier+"/")
-	conf.nmax=cps.qcm.nmax
-	listecopies=sorted([x for x in os.listdir(dossier+"/copies/"+str(cps.id)) if x.endswith('.jpg')], key=lambda r: int(''.join(x for x in r if x.isdigit())))
-	copies=list()
-	copies.append([qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[0],conf)])
-	for i in range(len(listecopies)-1):	
-		cop=qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[i+1],conf)
-		### les copies doivent être scannées dans l'ordre
-		if cop.code == copies[-1][0].code:
-			copies[-1].append(cop)
-		else:
-			copies.append([cop])
-			
-	listeCodes=[o[0].code for o in originaux]
-	eleveinconnu,creation=Eleve.objects.get_or_create(nom="Élève non associé")
-	copiesasupprimer=list()
-	for copie in copies:
-		
+	cps.corrigees=True
+	cps.save()
+	try:
+		dossier=os.path.dirname(cps.qcm.template.path)
+		os.mkdir(dossier+"/copies/"+str(cps.id))
+		sp.check_call(["convert", "-density", '200', cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
+		listepickle=[x for x in os.listdir(dossier+"/originaux") if x.endswith('.pickle')]
+		originaux=list()
+		for p in listepickle:
+			with open(dossier+"/originaux/"+p) as f:
+				originaux += pickle.load(f)
+
+		conf=qcmi.ConfigurationImport(dossier+"/")
+		conf.nmax=cps.qcm.nmax
+		listecopies=sorted([x for x in os.listdir(dossier+"/copies/"+str(cps.id)) if x.endswith('.jpg')], key=lambda r: int(''.join(x for x in r if x.isdigit())))
+		copies=list()
+		copies.append([qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[0],conf)])
+		for i in range(len(listecopies)-1):	
+			cop=qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[i+1],conf)
+		 ### les copies doivent être scannées dans l'ordre
+			if cop.code == copies[-1][0].code:
+				copies[-1].append(cop)
+			else:
+				copies.append([cop])
+
+		listeCodes=[o[0].code for o in originaux]
+		eleveinconnu,creation=Eleve.objects.get_or_create(nom="Élève non associé")
+		copiesasupprimer=list()
+		for copie in copies:
+
 			if not CopieCorrigee.objects.filter(numero=int(copie[0].code,2),qcm=cps.qcm):
 
 				cc=CopieCorrigee(copies=cps,numero=int(copie[0].code,2),eleve=eleveinconnu,qcm=cps.qcm)
 				cc.save()
 
-				try:
-					for i in range(len(copie)):
-						copie[i].compare(originaux[listeCodes.index(copie[i].code)][i])
-						ccjpg=CopieJPG(copiecorrigee=cc,fichier=copie[i].imgFichier)
-						ccjpg.save()
+			try:
+				for i in range(len(copie)):
+					copie[i].compare(originaux[listeCodes.index(copie[i].code)][i])
+					ccjpg=CopieJPG(copiecorrigee=cc,fichier=copie[i].imgFichier)
+					ccjpg.save()
 
-				except Exception,er:
-					print('Erreur de correction: ',er)
-					cc.delete()
-					copiesasupprimer.append(copie)
+			except Exception,er:
+				print('Erreur de correction: ',er)
+				cc.delete()
+				copiesasupprimer.append(copie)
 			else:
 				copiesasupprimer.append(copie)
 
-	for copie in copiesasupprimer:
-		copies.remove(copie)
+		for copie in copiesasupprimer:
+			copies.remove(copie)
 
-	listeRep=list()
-	for i in range(len(copies)):
-		listeRep.append([copies[i][0].code,"".join(copies[i][0].reponses)])
-		for j in range(len(copies[i])-1):
-			listeRep[-1][1]+="".join(copies[i][j+1].reponses)
-	fichierCSV=io.FileIO(dossier+"/copies/corr-"+str(cps.id)+".csv",'w')
-	for rep in listeRep:
-		fichierCSV.write(","+str(int(rep[0],2))+","+rep[1])
-		fichierCSV.write("\n")
-	fichierCSV.close()
-	
-	reponsesElevesCSV=dossier+"/copies/corr-"+str(cps.id)+".csv"
-	CorrSortie=dossier+"/corrections.csv"
-	#nomCSV=dossier+"/copies/notes-"+str(cps.id)+".csv"
-	corr=qcmc.correction(CorrSortie,reponsesElevesCSV)
-	corr.calculer()
-	for note in corr.note:
-		cc=CopieCorrigee.objects.get(numero=int(note[0]),copies=cps)
-		cc.note=note[1]
-		cc.save()
-	cps.corrigees=True
-	cps.save()
-	
+		listeRep=list()
+		for i in range(len(copies)):
+			listeRep.append([copies[i][0].code,"".join(copies[i][0].reponses)])
+			for j in range(len(copies[i])-1):
+				listeRep[-1][1]+="".join(copies[i][j+1].reponses)
+		fichierCSV=io.FileIO(dossier+"/copies/corr-"+str(cps.id)+".csv",'w')
+		for rep in listeRep:
+			fichierCSV.write(","+str(int(rep[0],2))+","+rep[1])
+			fichierCSV.write("\n")
+	       	fichierCSV.close()
+
+		reponsesElevesCSV=dossier+"/copies/corr-"+str(cps.id)+".csv"
+		CorrSortie=dossier+"/corrections.csv"
+	 #nomCSV=dossier+"/copies/notes-"+str(cps.id)+".csv"
+		corr=qcmc.correction(CorrSortie,reponsesElevesCSV)
+		corr.calculer()
+		for note in corr.note:
+			cc=CopieCorrigee.objects.get(numero=int(note[0]),copies=cps)
+			cc.note=note[1]
+			cc.save()
+	except Exception,er:
+		print("Erreur lors de la correction",er)
+@job	
 def generateur(qcm):
 
 	nbexos=list()
@@ -146,11 +152,6 @@ def generateur(qcm):
 		listexosqcm.append(nb.exo.fichier.path)
 	print('0.5')
 	config=ConfigurationMaker(steps=qcm.nbpdfs,numexam=qcm.id)
-	config.DossierSortie=os.path.dirname(qcm.template.path)+'/'
-	if 'originaux' not in os.listdir(config.DossierSortie):
-		os.mkdir(config.DossierSortie+'originaux')
-	if 'copies' not in os.listdir(config.DossierSortie):
-		os.mkdir(config.DossierSortie+'copies')
 	config.listeFichiers=listexosqcm
 	config.nbexos=nbexos
 	config.qcmid=qcm.id
@@ -158,6 +159,12 @@ def generateur(qcm):
 	config.texteQCM=qcm.texteTeX.encode('utf-8','ignore')
 	qcm.nmax=int(np.trunc(np.log2(config.ntotal))+1)
 	qcm.save()
+	config.DossierSortie=os.path.dirname(qcm.template.path)+'/'
+	if 'originaux' not in os.listdir(config.DossierSortie):
+		os.mkdir(config.DossierSortie+'originaux')
+	if 'copies' not in os.listdir(config.DossierSortie):
+		os.mkdir(config.DossierSortie+'copies')
+
 	
 	#création d'une list() d'objets "liste d'exo" (i.e. un ficher.exos), une liste d'exo pour chaque fichier
 	exos=list()
@@ -181,6 +188,7 @@ def generateur(qcm):
 	random.shuffle(config.codes)
 	random.shuffle(config.codes)
 	
+	listeqcmpdf=list()
 	
 	#on tire au hasard nexos[j] exos dans le fichier j, pour chaque fichier, et on répète pour avoir un total de ntotal codes tex
 	for i in range(config.ntotal):
@@ -218,6 +226,7 @@ def generateur(qcm):
 			sp.call(pdfuniteArg)
 			fpdf=QcmPdf(qcm=qcm,fichier=config.DossierSortie+"originaux/"+config.TeXSortie+"-"+str(paquet)+'.pdf',nom=config.TeXSortie+"-"+str(paquet)+'.pdf')
 			fpdf.save()
+			listeqcmpdf.append(fpdf)
 			paquet+=1
 			pdfuniteArg=list()
 			pdfuniteArg.append('pdfunite')
@@ -225,17 +234,22 @@ def generateur(qcm):
 			sh.copy(config.DossierSortie+config.TeXSortie+str(i+config.nfeuille)+'.pdf',config.DossierSortie+"originaux/"+config.TeXSortie+".pdf")
 			fpdf=QcmPdf(qcm=qcm,fichier=File(open(config.DossierSortie+"originaux/"+config.TeXSortie+".pdf", 'r')),nom=config.TeXSortie+".pdf")
 			fpdf.save()
+			listeqcmpdf.append(fpdf)
 			
 	#et on efface les pdf et tex de passage
 	for j in range(config.ntotal):
 		os.remove(config.DossierSortie+config.TeXSortie+str(j+config.nfeuille)+'.pdf')
 		os.remove(config.DossierSortie+config.TeXSortie+str(j+config.nfeuille)+'.tex')
 	
+	qcm.gen=1
+	qcm.save()
 	
 	#on sort le .csv des corrections
 	sortieCSV.imprimerC(config)
 	sortieCSV.imprimerQ(config.listeFichiers,config.nbexos,config)
 	
+	for qcmpdf in listeqcmpdf:
+		importoriginaux(qcmpdf)
 
 
 def telecharger(request,objet):
@@ -459,11 +473,10 @@ def qcmaker(request):
 			qcm.save()
 			print('ok')
 			try:
-				generateur(qcm)
-				qcm.gen=1
-				qcm.save()
+				generateur.delay(qcm)
 				return redirect('prof.views.qcmanage')
 			except Exception, er:
+				qcm.delete()
 				print("Erreur generateur: ",er, Exception)
 				return redirect('prof.views.home')
 					
@@ -476,7 +489,7 @@ def qcmaker(request):
 	#	return redirect('prof.views.home')
 	
 	qcm=Qcm.objects.get(id=request.session['qcm'])
-	if qcm.gen==1:
+	if qcm.gen or not qcm.nmax==0:
 		return redirect('prof.views.qcmanage')
 	#on remplit la liste des exos
 	listexostemp=pr.exo_set.all()
@@ -509,6 +522,8 @@ def qcmanage(request):
 		
 	pr=Enseignant.objects.get(nom=nom)
 	qcm=Qcm.objects.get(id=request.session['qcm'])
+
+
 	mi_id=-1
 	
 	if request.method == 'POST':
@@ -519,33 +534,37 @@ def qcmanage(request):
 		formEffCopie = EffacerCopie(request.POST)
 		formNote = Note(request.POST)
 		formGenNotes = TelechargerNotes(request.POST)
+		#si téléchargement de qcmpdf
 		if formTelecharger.is_valid():
 			qcmpdf=QcmPdf.objects.get(fichier=formTelecharger.cleaned_data['fichieratel'])
-			if not qcmpdf.traite:
-				importoriginaux(qcmpdf)
 			return telecharger(request,formTelecharger.cleaned_data['fichieratel'])
+		#si upload de copie
 		elif formAjoutCopies.is_valid():
 			cps=Copies(qcm=qcm,fichier=formAjoutCopies.cleaned_data['fichiercp'],nom=str(formAjoutCopies.cleaned_data['fichiercp']))
 			cps.save()
+		#si demande de correction
 		elif formCorr.is_valid():
 			cps=Copies.objects.get(id=formCorr.cleaned_data['ccorr'])
 			try:
-				correction(cps)
+				correction.delay(cps)
 			except Exception, er:
 				print("Erreur : ",er)
 				cps.delete()
+		#si demande de montrer une copie (image)
 		elif formMontrerIm.is_valid():
 			mi_id=formMontrerIm.cleaned_data['montrerimage']
-			print('ok')
+		#si effacement d'une copie
 		elif formEffCopie.is_valid():
-			print(formEffCopie.cleaned_data['cpid'])
 			CopieCorrigee.objects.get(id=formEffCopie.cleaned_data['cpid']).delete()
+		#si mise à jour d'une note
 		elif formNote.is_valid():
 			cc=CopieCorrigee.objects.get(id=formNote.cleaned_data['copiecorrigeeid'])		
 			cc.note=formNote.cleaned_data['note']
 			cc.save()
+		#si téléchargement des notes au format CSV
 		elif formGenNotes.is_valid():
 			return telecharger(request,genererCSVnotes(qcm))
+		#sinon bug?
 		else:
 			print('rien')
 			
@@ -594,6 +613,11 @@ def qcmanage(request):
 		tform=Corriger(initial={'ccorr':cp.id})
 		listecopies.append({'nom':cp.nom,'corrigee':cp.corrigees,'formCor':tform})
 
+	#le worker marche encore, création des pdfs
+	encours=not qcm.gen
+	#le worker marche encore, import des pdfs
+	importpdfini = len(QcmPdf.objects.filter(qcm=qcm)) == len(QcmPdf.objects.filter(qcm=qcm,traite=True))
+	print(importpdfini)
 	formGenNotes = TelechargerNotes()
 	formAjoutCopies = AjoutCopies()
 					

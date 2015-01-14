@@ -10,6 +10,7 @@ Django==1.7
 argparse==1.2.1
 distribute==0.7.3
 django-cas==2.1.1
+django-rq==0.7.0
 matplotlib==1.4.2
 mock==1.0.1
 nose==1.3.4
@@ -17,8 +18,15 @@ numpy==1.9.1
 pyparsing==2.0.3
 python-dateutil==2.4.0
 pytz==2014.10
+redis==2.10.3
+rq==0.4.6
 six==1.9.0
 wsgiref==0.1.2
+
+Il faut un serveur redis, configuration de django-rq ici:
+https://github.com/ui/django-rq
+Le serveur redis doit être lancé ainsi que 
+python manage.py rq-worker default
 
 Pour trouver le bon django-cas:
 pip install https://bitbucket.org/cpcc/django-cas/get/47d19f3a871f.zip

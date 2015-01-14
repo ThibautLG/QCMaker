@@ -1,7 +1,19 @@
 {% extends "base.html" %}
 
+
+{% block head %}
+{% if encours %}
+<meta http-equiv="refresh" content="5">
+{% else %}
+{% if not importpdfini %}
+<meta http-equiv="refresh" content="10">
+{% endif %}
+{% endif %}
+{% endblock %}
+
+
 {% block content %}
-<h2>QCM {{ qcm.nom }}<br></h2>
+<h2>QCM {{ qcm.nom }}</h2><br><br>
 {{ qcm.nomTeX }}
 {% if listecps %}
 <br><br>
@@ -60,7 +72,9 @@
 	<input type="submit" value="{{ pdf.nom }}" />
 </form>
 {% endfor %}
-
+{% if encours %}
+<br> En cours de préparation...
+{% endif %}
 
 {% if listecopies %}
 <h2>Liste des copies chargées:</h2>
@@ -77,10 +91,18 @@
 </td></tr>
 {% endfor %} </table>
 {% endif %}
+ <br><br>
+{% if not encours %}
+{% if importpdfini %}
+<h2>Charger des copies à corriger:</h2>
 <table><tr>
 <form action="{% url 'prof.views.qcmanage' %}" method="post" enctype="multipart/form-data">
     {% csrf_token %}<td>
     <table>{{ formAjoutCopies}}</table></td><td> <input type="submit" value="Ajouter" /></td>
 </form></tr>
 </table>
+{% else %}
+Préparation des corrections automatiques...
+{% endif %}
+{% endif %}
 {% endblock %}
