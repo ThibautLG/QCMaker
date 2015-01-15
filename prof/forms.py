@@ -43,9 +43,6 @@ class MontrerImage(forms.Form):
 class AjoutCopies(forms.Form):
 	fichiercp = forms.FileField(label="Copies")
 	
-class Corriger(forms.Form):
-	ccorr = forms.IntegerField(widget=forms.HiddenInput())
-	
 class Telecharger(forms.Form):
 	fichieratel = forms.CharField(label="Fichier",widget=forms.HiddenInput())
 	

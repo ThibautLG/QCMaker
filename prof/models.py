@@ -84,5 +84,12 @@ class CopieCorrigee(models.Model):
 class CopieJPG(models.Model):
 	fichier = models.CharField(max_length=200)
 	copiecorrigee = models.ForeignKey(CopieCorrigee)
-	
+
+	def delete(self, *args, **kwargs):
+		try:
+			os.remove(self.fichier)
+			super(Qcm, self).delete(*args, **kwargs) # Call the "real" save() method.
+		except Exception, er:
+			print('Impossible de supprimer le dossier du QCM:',er)
+
 

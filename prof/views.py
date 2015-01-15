@@ -68,8 +68,6 @@ def importoriginaux(qcmpdf):
 @job
 def correction(cps):
 	
-	cps.corrigees=True
-	cps.save()
 	try:
 		dossier=os.path.dirname(cps.qcm.template.path)
 		os.mkdir(dossier+"/copies/"+str(cps.id))
@@ -103,16 +101,16 @@ def correction(cps):
 				cc=CopieCorrigee(copies=cps,numero=int(copie[0].code,2),eleve=eleveinconnu,qcm=cps.qcm)
 				cc.save()
 
-			try:
-				for i in range(len(copie)):
-					copie[i].compare(originaux[listeCodes.index(copie[i].code)][i])
-					ccjpg=CopieJPG(copiecorrigee=cc,fichier=copie[i].imgFichier)
-					ccjpg.save()
+				try:
+					for i in range(len(copie)):
+						copie[i].compare(originaux[listeCodes.index(copie[i].code)][i])
+						ccjpg=CopieJPG(copiecorrigee=cc,fichier=copie[i].imgFichier)
+						ccjpg.save()
 
-			except Exception,er:
-				print('Erreur de correction: ',er)
-				cc.delete()
-				copiesasupprimer.append(copie)
+				except Exception,er:
+					print('Erreur de correction: ',er)
+					cc.delete()
+					copiesasupprimer.append(copie)
 			else:
 				copiesasupprimer.append(copie)
 
@@ -139,8 +137,14 @@ def correction(cps):
 			cc=CopieCorrigee.objects.get(numero=int(note[0]),copies=cps)
 			cc.note=note[1]
 			cc.save()
+
+		cps.corrigees=True
+		cps.save()
 	except Exception,er:
 		print("Erreur lors de la correction",er)
+		cps.corrigees=True
+		cps.save()
+
 @job	
 def generateur(qcm):
 
@@ -253,18 +257,18 @@ def generateur(qcm):
 
 
 def telecharger(request,objet):
-   if isinstance(objet,models.FileField):
-	   the_file = objet.path
-   elif isinstance(objet,str):
-	   the_file = objet
-   elif isinstance(objet,unicode):
-	   the_file = objet
-   filename = os.path.basename(the_file)
-   response = HttpResponse(FileWrapper(open(the_file)),
-                           content_type=mimetypes.guess_type(the_file)[0])
-   response['Content-Length'] = os.path.getsize(the_file)    
-   response['Content-Disposition'] = "attachment; filename=%s" % filename
-   return response
+	if isinstance(objet,models.FileField):
+		the_file = objet.path
+	elif isinstance(objet,str):
+		the_file = objet
+	elif isinstance(objet,unicode):
+		the_file = objet
+	filename = os.path.basename(the_file)
+	response = HttpResponse(FileWrapper(open(the_file)),
+				content_type=mimetypes.guess_type(the_file)[0])
+	response['Content-Length'] = os.path.getsize(the_file)    
+	response['Content-Disposition'] = "attachment; filename=%s" % filename
+	return response
    
 def image(request,id_cc):
 	
@@ -529,7 +533,6 @@ def qcmanage(request):
 	if request.method == 'POST':
 		formTelecharger = Telecharger(request.POST)
 		formAjoutCopies = AjoutCopies(request.POST,request.FILES)
-		formCorr = Corriger(request.POST)
 		formMontrerIm = MontrerImage(request.POST)
 		formEffCopie = EffacerCopie(request.POST)
 		formNote = Note(request.POST)
@@ -542,9 +545,6 @@ def qcmanage(request):
 		elif formAjoutCopies.is_valid():
 			cps=Copies(qcm=qcm,fichier=formAjoutCopies.cleaned_data['fichiercp'],nom=str(formAjoutCopies.cleaned_data['fichiercp']))
 			cps.save()
-		#si demande de correction
-		elif formCorr.is_valid():
-			cps=Copies.objects.get(id=formCorr.cleaned_data['ccorr'])
 			try:
 				correction.delay(cps)
 			except Exception, er:
@@ -610,8 +610,7 @@ def qcmanage(request):
 	listecopiestemp=Copies.objects.filter(qcm=qcm)
 	listecopies=list()
 	for cp in listecopiestemp:
-		tform=Corriger(initial={'ccorr':cp.id})
-		listecopies.append({'nom':cp.nom,'corrigee':cp.corrigees,'formCor':tform})
+		listecopies.append({'nom':cp.nom,'corrigee':cp.corrigees})
 
 	#le worker marche encore, création des pdfs
 	encours=not qcm.gen
