@@ -23,8 +23,12 @@ rq==0.4.6
 six==1.9.0
 wsgiref==0.1.2
 
-Il faut un serveur redis, configuration de django-rq ici:
+Il faut un serveur redis:
+http://redis.io/topics/quickstart
+
+et la configuration de django-rq est expliquée ici:
 https://github.com/ui/django-rq
+
 Le serveur redis doit être lancé ainsi que 
 python manage.py rq-worker default
 
@@ -56,3 +60,7 @@ DATABASES = {
 
 Il faut aussi certainement préparer la base de données avec un:
 python manage.py syncdb
+
+Y'a aussi a lancer pour la mise en prod:
+mkdir static;
+python manage.py collectstatic

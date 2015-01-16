@@ -57,7 +57,6 @@ def importoriginaux(qcmpdf):
 				originaux[-1].append(ori)
 			else:
 				originaux.append([ori])
-		print(ori.code,ori.pts)
 		os.remove(dossier+"originaux/"+listeoriginaux[i])
 	with open(conf.pickle, 'w') as f:
 		pickle.dump(originaux, f)
@@ -152,9 +151,7 @@ def generateur(qcm):
 	listexosqcm=list()
 	for nb in NbExos.objects.filter(qcm=qcm):
 		nbexos.append(nb.nbexos)
-		print('0',nb)
 		listexosqcm.append(nb.exo.fichier.path)
-	print('0.5')
 	config=ConfigurationMaker(steps=qcm.nbpdfs,numexam=qcm.id)
 	config.listeFichiers=listexosqcm
 	config.nbexos=nbexos
@@ -178,8 +175,7 @@ def generateur(qcm):
 		
 	#on créé notre classe CSV
 	sortieCSV=CSV(config.DossierSortie+config.CorrSortie,config.DossierSortie+config.QSortie)
-	print('1')
-	
+		
 	#on prépare la liste d'arguments pour le pdfunite de la sortie
 	pdfuniteArg=list()
 	pdfuniteArg.append('pdfunite')
@@ -207,7 +203,6 @@ def generateur(qcm):
 			sortieCSV.ajouterC(i,exos[k],r)					#on prévient le CSV
 			sortieCSV.ajouterQ(i,r)
 			k+=1											#on passe à la liste d'exos suivante
-		print('2',j)
 		sortie=TeXify(config.DossierSortie+config.TeXTemplate,exos,listeExosSortie,str(bin(config.nfeuille+i)[2:]),config)		#on TeX tout ça
 	
 		#on écrit tout ça dans un .tex
@@ -215,7 +210,6 @@ def generateur(qcm):
 		for ligne in range(len(sortie.TeX)):
 			fichierSortie.write(sortie.TeX[ligne])
 		fichierSortie.close()
-		print('3',j)
 		#on le compile
 		sp.check_output(['pdflatex','-output-directory',config.DossierSortie,config.DossierSortie+config.TeXSortie+str(i+config.nfeuille)+'.tex'])
       		#et on efface les fichiers inutiles
@@ -327,7 +321,6 @@ def ehome(request):
 					else:
 						err='3'
 				else:
-					print(el.copiecorrigee_set.filter(qcm=qcm))
 					err='4'
 			except Exception, er:
 				print("Erreur : ",er)
@@ -421,11 +414,10 @@ def qcmaker(request):
 	formExoChoix.setListe(listexos)		
 	formDel=EffacerExo(request.POST)
 	
-	
 	if request.method == 'POST':  # S'il s'agit d'une requête POST
 	
 		#si nouveau QCM
-		if formNQCM.is_valid(): # Nous vérifions que les données envoyées sont valides
+		if formNQCM.is_valid():
 			qcm,creation=Qcm.objects.get_or_create(prof=pr,nom=formNQCM.cleaned_data["titre"])
 			qcm.template = File(open("template.tex", 'r'))
 			if creation:
@@ -473,25 +465,18 @@ def qcmaker(request):
 		#si génération des qcms
 		elif formGenerer.is_valid():
 			qcm=Qcm.objects.get(id=request.session['qcm'])
-			qcm.nbpdfs=formGenerer.cleaned_data['nbpdfs']
-			qcm.save()
-			print('ok')
-			try:
-				generateur.delay(qcm)
-				return redirect('prof.views.qcmanage')
-			except Exception, er:
-				qcm.delete()
-				print("Erreur generateur: ",er, Exception)
-				return redirect('prof.views.home')
+			#si aucun générateur n'est en cours
+			if qcm.nbpdfs != '':
+				qcm.nbpdfs=formGenerer.cleaned_data['nbpdfs']
+				qcm.save()
+				try:
+					generateur.delay(qcm)
+					return redirect('prof.views.qcmanage')
+				except Exception, er:
+					qcm.delete()
+					print("Erreur generateur: ",er, Exception)
+					return redirect('prof.views.home')
 					
-		#sinon, erreur!
-		else:
-			print(request.POST)
-			return redirect('prof.views.home')
-	#si pas de POST!			
-	#else:
-	#	return redirect('prof.views.home')
-	
 	qcm=Qcm.objects.get(id=request.session['qcm'])
 	if qcm.gen or not qcm.nmax==0:
 		return redirect('prof.views.qcmanage')
@@ -510,9 +495,11 @@ def qcmaker(request):
 		listexosqcm.append({'nom':nb.exo.nom,'nb':nb.nbexos,'formDel':tform})
 	formNTemplate = AjoutTemplate()
 	formNTemplate.setFields(qcm)
-	formGenerer = Generer()
 	formNExos = NouveauxExos()
-	
+	try:
+		formGenerer.erreurici
+	except Exception,er:
+		formGenerer = Generer()
 	return render(request, 'qcmaker.html', locals())
 
 	
@@ -599,7 +586,6 @@ def qcmanage(request):
 		formtemp=MontrerImage(initial={'montrerimage':cp.id})
 		tform=EffacerCopie(initial={'cpid':cp.id})
 		tformNote=Note(initial={'note':cp.note,'copiecorrigeeid':cp.id})
-		print(mi_id,cp.id)
 		if mi_id == cp.id:
 			for ccc in cp.copiejpg_set.all():
 				listecjpgtemp.append(ccc.id)
@@ -610,13 +596,15 @@ def qcmanage(request):
 	listecopiestemp=Copies.objects.filter(qcm=qcm)
 	listecopies=list()
 	for cp in listecopiestemp:
+		#le worker marche encore, correction de copies
+		if not cp.corrigees:
+			correctionencours=True
 		listecopies.append({'nom':cp.nom,'corrigee':cp.corrigees})
 
 	#le worker marche encore, création des pdfs
 	encours=not qcm.gen
 	#le worker marche encore, import des pdfs
 	importpdfini = len(QcmPdf.objects.filter(qcm=qcm)) == len(QcmPdf.objects.filter(qcm=qcm,traite=True))
-	print(importpdfini)
 	formGenNotes = TelechargerNotes()
 	formAjoutCopies = AjoutCopies()
 					
