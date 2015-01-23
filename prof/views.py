@@ -465,7 +465,7 @@ def qcmaker(request):
 		elif formGenerer.is_valid():
 			qcm=Qcm.objects.get(id=request.session['qcm'])
 			#si aucun générateur n'est en cours
-			if qcm.nbpdfs != '':
+			if qcm.nbpdfs == '':
 				qcm.nbpdfs=formGenerer.cleaned_data['nbpdfs']
 				qcm.save()
 				print('ok, on lance le générateur')
