@@ -16,7 +16,6 @@ urlpatterns = patterns('',
     url(r'^image/(?P<id_cc>\d+)','prof.views.image'),
     url(r'^login', 'django_cas.views.login'), 
     url(r'^logout', 'django_cas.views.logout'), 
-    url(r'^django-rq/', include('django_rq.urls')),    
 )
 
 

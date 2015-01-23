@@ -12,7 +12,8 @@ import qcmimport as qcmi
 import qcmcorrecteur as qcmc
 from django.core.files import File
 import random
-from django_rq import job
+from bgjob import BgJob
+#from django_rq import job
 
 
 
@@ -65,7 +66,7 @@ def importoriginaux(qcmpdf):
 	qcmpdf.traite=True
 	qcmpdf.save()
 
-@job
+
 def correction(cps):
 	
 	try:
@@ -145,7 +146,7 @@ def correction(cps):
 		cps.corrigees=True
 		cps.save()
 
-@job	
+
 def generateur(qcm):
 
 	nbexos=list()
@@ -440,14 +441,12 @@ def qcmaker(request):
 			except Exception, er:
 				print("Erreur : ",er)
 				return redirect('prof.views.home')	
-				
+
 		#si nouvel exo.exos	
 		elif formNExos.is_valid():
 			e,creation=Exo.objects.get_or_create(prof=pr,nom=str(formNExos.cleaned_data["exos"]))
 			if creation:
-				e.delete()
-				e=Exo(prof=pr,nom=str(formNExos.cleaned_data["exos"]))
-				e.fichier = formNExos.cleaned_data["exos"]
+       				e.fichier = formNExos.cleaned_data["exos"]
 				e.save()
 				
 		#si suppression de QCM
@@ -473,11 +472,14 @@ def qcmaker(request):
 		#si génération des qcms
 		elif formGenerer.is_valid():
 			qcm=Qcm.objects.get(id=request.session['qcm'])
+			if qcm.nbpdfs>0:
+				return redirect('prof.views.qcmanage')
 			qcm.nbpdfs=formGenerer.cleaned_data['nbpdfs']
 			qcm.save()
 			print('ok')
 			try:
-				generateur.delay(qcm)
+				BgJob(generateur,qcm)
+#generateur.delay(qcm)
 				return redirect('prof.views.qcmanage')
 			except Exception, er:
 				qcm.delete()
@@ -546,7 +548,8 @@ def qcmanage(request):
 			cps=Copies(qcm=qcm,fichier=formAjoutCopies.cleaned_data['fichiercp'],nom=str(formAjoutCopies.cleaned_data['fichiercp']))
 			cps.save()
 			try:
-				correction.delay(cps)
+				BgJob(correction,cps)
+#correction.delay(cps)
 			except Exception, er:
 				print("Erreur : ",er)
 				cps.delete()

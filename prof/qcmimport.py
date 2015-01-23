@@ -51,6 +51,7 @@ class Copie():
 				code.append('1')
 		code="".join(code)
 		self.code=code
+		print(self.code)
 		
 	#méthode pour trouver les trois repères de la copie, qui serviront à mettre l'élève et l'original à la même échelle
 	def trouverpt(self,i):
