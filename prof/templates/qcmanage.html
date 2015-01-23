@@ -2,10 +2,8 @@
 
 
 {% block head %}
-{% if encours or not importpdfini %}
-<meta http-equiv="refresh" content="5">
-{% else %}
-<meta http-equiv="refresh" content="20">
+{% if encours or not importpdfini or correctionencours %}
+<meta http-equiv="refresh" content="10">
 {% endif %}
 {% endblock %}
 
@@ -55,10 +53,10 @@
 {% endfor %}
 </table>
 {% endif %}
-<h2>Composition du QCM<br></h2>
+<h2>Composition du QCM</h2><br>
 
 {% for exo in listexosqcm %}
-   <span style="text-decoration: underline;"> {{ exo.nom }} </span> ({{ exo.nb }} exerice{{ exo.nb|pluralize }})
+   <span style="text-decoration: underline;"> {{ exo.nom }} </span> ({{ exo.nb }} exercice{{ exo.nb|pluralize }})
 <br>
 {% endfor %} 
 
