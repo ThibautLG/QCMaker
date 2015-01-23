@@ -41,24 +41,6 @@ INSTALLED_APPS = (
     'prof',
 )
 
-RQ_QUEUES = {
-    'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-        'DEFAULT_TIMEOUT': 3600,
-    },
-    'high': {
-        'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379'), # If you're on Heroku
-        'DB': 0,
-        'DEFAULT_TIMEOUT': 500,
-    },
-    'low': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-    }
-}
 
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'templates'),

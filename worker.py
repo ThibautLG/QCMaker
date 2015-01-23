@@ -27,5 +27,6 @@ while True:
                 print('Job '+str(job)+' fait')
         except Exception,er:
             print('Erreur: '+str(er))
+            os.remove(dossierbgjobs+job)
     time.sleep(1)
     
