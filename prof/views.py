@@ -582,7 +582,7 @@ def qcmanage(request):
 	random.shuffle(codes)
 	random.shuffle(codes)
 
-	for cp in CopieCorrigee.objects.filter(qcm=qcm):
+	for cp in [cc for cc in CopieCorrigee.objects.filter(qcm=qcm) if cc.copies.corrigees]:
 		listecjpgtemp=list()
 		formtemp=MontrerImage(initial={'montrerimage':cp.id})
 		tform=EffacerCopie(initial={'cpid':cp.id})
