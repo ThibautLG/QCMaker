@@ -19,6 +19,8 @@
 <input type="submit" value="Télécharger les notes" />
 </form>
 <br>
+Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} corrigée{{ nbcopiescorrigees|pluralize }}.
+<br><br><br>
 <table cellspacing="20%" class="tableaunotes">
 <tr><td><h3>N° copie</h3></td><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
 {% for cp in listecps %}
@@ -47,7 +49,7 @@
 <tr><td colspan="4">
 	{% for cjpg in cp.jpg %}
 	<a href="{% url 'prof.views.image' cjpg %}">
-	<img src="{% url 'prof.views.image' cjpg %}" style="height:228px"></a>
+	<img src="{% url 'prof.views.image' cjpg %}" style="height:456px"></a><!-- style="height:228px -->
 	{% endfor %}
 </td></tr>
 {% endfor %}

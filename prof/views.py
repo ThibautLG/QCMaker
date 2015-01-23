@@ -476,8 +476,12 @@ def qcmaker(request):
 					qcm.delete()
 					print("Erreur generateur: ",er, Exception)
 					return redirect('prof.views.home')
-					
-	qcm=Qcm.objects.get(id=request.session['qcm'])
+				
+	try:
+		qcm=Qcm.objects.get(id=request.session['qcm'])
+	except Exception,er:
+		print('Erreur chargement du QCM: '+str(er))
+		return redirect('prof.views.home')
 	if qcm.gen or not qcm.nmax==0:
 		return redirect('prof.views.qcmanage')
 	#on remplit la liste des exos
@@ -510,10 +514,12 @@ def qcmanage(request):
 	nom=str(request.user.username)
 	if not is_prof(nom):
 		return redirect('prof.views.ehome')
-		
-	pr=Enseignant.objects.get(nom=nom)
-	qcm=Qcm.objects.get(id=request.session['qcm'])
-
+	
+	try:
+		pr=Enseignant.objects.get(nom=nom)
+		qcm=Qcm.objects.get(id=request.session['qcm'])
+	except Exception,er:
+		return redirect('prof.views.home')
 
 	mi_id=-1
 	
@@ -534,7 +540,6 @@ def qcmanage(request):
 			cps.save()
 			try:
 				BgJob(correction,cps)
-#correction.delay(cps)
 			except Exception, er:
 				print("Erreur : ",er)
 				cps.delete()
@@ -591,6 +596,7 @@ def qcmanage(request):
 			for ccc in cp.copiejpg_set.all():
 				listecjpgtemp.append(ccc.id)
 		listecps.append({'id':cp.id,'note':cp.note,'nom':cp.eleve.nom,'jpg':listecjpgtemp,'formMI':formtemp,'formEffCopie':tform,'formNote':tformNote,'code':codes[cp.numero]})
+	nbcopiescorrigees=len(listecps)
 		
 
 	#on remplit la liste des copies
