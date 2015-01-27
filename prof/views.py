@@ -150,7 +150,7 @@ def generateur(qcm):
 
 	nbexos=list()
 	listexosqcm=list()
-	for nb in NbExos.objects.filter(qcm=qcm):
+	for nb in sorted(NbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id)):
 		nbexos.append(nb.nbexos)
 		listexosqcm.append(nb.exo.fichier.path)
 	config=ConfigurationMaker(steps=qcm.nbpdfs,numexam=qcm.id)
@@ -492,7 +492,7 @@ def qcmaker(request):
 	formExoChoix = ExoChoix()
 	formExoChoix.setListe(listexos)
 	#on remplit la liste des exos qcm		
-	listexosqcmtemp=NbExos.objects.filter(qcm=qcm)
+	listexosqcmtemp=sorted(NbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
 	listexosqcm=list()
 	for nb in listexosqcmtemp:
 		tform=EffacerExo(initial={'exo':nb.id})
@@ -564,7 +564,7 @@ def qcmanage(request):
 			
 	
 	#on remplit la liste des exos qcm		
-	listexosqcmtemp=NbExos.objects.filter(qcm=qcm)
+	listexosqcmtemp=sorted(NbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
 	listexosqcm=list()
 	for nb in listexosqcmtemp:
 		tform=EffacerExo(initial={'exo':nb.id})

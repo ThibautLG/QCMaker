@@ -2,7 +2,7 @@
 
 import pickle, os, time, io
 from datetime import datetime
-os.environ['LD_LIBRARY_PATH'] = "/usr/local/lib/gcc48"
+
 
 from django.core.wsgi import get_wsgi_application
 os.environ['DJANGO_SETTINGS_MODULE'] = 'qcm.settings'
