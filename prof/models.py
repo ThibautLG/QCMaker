@@ -5,10 +5,50 @@ from datetime import datetime
 from django.core.files.storage import FileSystemStorage
 import shutil,os
 
-
-# Create your models here.
+# Modeles pour le core.py
 class Enseignant(models.Model):
 	nom=models.CharField(max_length=200)
+
+class CoreBanque(models.Model):
+	nom = models.CharField(max_length=200)
+	prof = models.ForeignKey(Enseignant)
+	
+class CoreQcm(models.Model):
+	nom = models.CharField(max_length=200)
+	nomTeX = models.CharField(max_length=200,default="Matière - 2014/2015")
+	texteTeX = models.CharField(max_length=2000,default="\\centerline{Durée 30 minutes}\n\\medskip \n{\\it \n\\noindent\\underline{La correction est automatisée, }\\textbf{noircir} \\underline{ les cases des réponses justes et laisser vides les autres cases.} \\\ \nAucun document autorisé, téléphones portables et calculatrices interdits.\\\ \nUn seule réponse juste par exercice. \\\ \nBarème: réponse juste = 1pt, réponse fausse  = -0.5pt \n}")
+	nbexos = models.ManyToManyField(CoreBanque, through='CoreNbExos')
+
+class CoreNbExos(models.Model):
+	nb = models.IntegerField()
+	banque = models.ForeignKey(CoreBanque)
+	qcm = models.ForeignKey(CoreQcm)
+	
+class CoreExo(models.Model):
+	question = models.CharField(max_length=2000)
+	corrige = models.CharField(max_length=2000)
+	formule = models.CharField(max_length=200)
+	type = models.CharField(max_length=200)
+	banque = models.ForeignKey(CoreBanque)
+	
+class CoreReponse(models.Model):
+	exo = models.ForeignKey(CoreExo)
+	nom = models.CharField(max_length=200)
+	texte = models.CharField(max_length=2000)
+	
+class CoreQcmPdf(models.Model):
+	numero = models.IntegerField()
+	code = models.CharField(max_length=200)
+	qcm = models.ForeignKey(CoreQcm)
+	paquet = models.IntegerField()
+	exos = models.ManyToManyField(CoreExo,through='CoreExoQcmPdf')
+	
+class CoreExoQcmPdf(models.Model):
+	qcmpdf = models.ForeignKey(CoreQcmPdf)
+	exo = models.ForeignKey(CoreExo)
+
+
+# Create your models here.
 
 	
 class Exo(models.Model):
@@ -59,9 +99,9 @@ class QcmPdf(models.Model):
 	traite = models.BooleanField(default=False)
 
 class NbExos(models.Model):
-    nbexos = models.IntegerField()
-    qcm = models.ForeignKey(Qcm)
-    exo = models.ForeignKey(Exo)
+	nbexos = models.IntegerField()
+	qcm = models.ForeignKey(Qcm)
+	exo = models.ForeignKey(Exo)
     
 class Eleve(models.Model):
 	nom=models.CharField(max_length=200)
