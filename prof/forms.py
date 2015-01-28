@@ -2,6 +2,28 @@
 
 from django import forms
 
+class MakexoMain(forms.Form):
+
+	def setFields(self,exo):
+		self.fields['question'] = forms.CharField(initial=exo.question,label="",widget=forms.Textarea)
+		self.fields['corrige'] = forms.CharField(initial=exo.corrige,label="",widget=forms.Textarea)
+		self.fields['question'].widget.attrs['cols']=u'90'
+		self.fields['corrige'].widget.attrs['cols']=u'90'
+
+	question = forms.CharField(initial="Question",label="",widget=forms.Textarea)
+	corrige = forms.CharField(initial="Correction",label="",widget=forms.Textarea) 	
+	type = forms.ChoiceField(label="Type de correction",choices=[('1','Une bonne réponse')])
+
+class MakexoAjouterReponse(forms.Form):
+	
+	nouvellereponse = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
+
+
+class MakexoReponse(forms.Form):
+
+	nom = forms.CharField(max_length=3)
+	texte = forms.CharField(max_length=2000,widget=forms.Textarea)
+
 class Generer(forms.Form):
 	nbpdfs = forms.CharField(initial="30,30,30",label="Copies à générer")
 

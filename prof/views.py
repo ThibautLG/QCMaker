@@ -617,3 +617,40 @@ def qcmanage(request):
 					
 	return render(request, 'qcmanage.html', locals())
 
+def makexo(request):
+
+	if not request.user.is_active:
+		return redirect('django_cas.views.login')
+	nom=str(request.user.username)
+	if not is_prof(nom):
+		return redirect('prof.views.ehome')
+	try:
+		pr=Enseignant.objects.get(nom=nom)
+		qcm=Qcm.objects.get(id=request.session['qcm'])
+	except Exception,er:
+		return redirect('prof.views.home')
+
+	banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom="Banque test")
+	coreexo,creation = CoreExo.objects.get_or_create(banque=banque)
+
+	if request.method == 'POST':
+		formMain = MakexoMain(request.POST)
+		formAjouterReponse = MakexoAjouterReponse(request.POST)
+		if formMain.is_valid():
+			coreexo.question = formMain.cleaned_data['question']
+			coreexo.corrige = formMain.cleaned_data['corrige']
+			coreexo.type = formMain.cleaned_data['type']
+			coreexo.save()
+		elif formAjouterReponse.is_valid():
+			reponse = CoreReponse(exo=coreexo,texte="Reponse",nom="v")
+			reponse.save()
+
+	listereponses = list()
+	for reponse in coreexo.corereponse_set.all():
+		listereponses.append({'nom':reponse.nom,'texte':reponse.texte})
+	formMain = MakexoMain()
+	formMain.setFields(coreexo)
+	formAjouterReponse = MakexoAjouterReponse()
+
+	return render(request, 'makexo.html', locals())
+
