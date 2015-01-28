@@ -10,7 +10,6 @@ Django==1.7
 argparse==1.2.1
 distribute==0.7.3
 django-cas==2.1.1
-matplotlib==1.4.2
 mock==1.0.1
 nose==1.3.4
 numpy==1.9.1
@@ -48,3 +47,17 @@ DATABASES = {
 
 Il faut aussi certainement préparer la base de données avec un:
 python manage.py syncdb
+
+Y'a aussi a lancer pour la mise en prod:
+mkdir static;
+python manage.py collectstatic
+
+
+== Lancement ==
+
+Au demarrage, il faut aussi lancer le worker:
+python worker.py
+
+et pour un bug du serveur, s'assurer que:
+export LD_LIBRARY_PATH=/usr/local/lib/gcc48
+

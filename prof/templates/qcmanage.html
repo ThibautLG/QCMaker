@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 
+
+{% block head %}
+{% if encours or not importpdfini or correctionencours %}
+<meta http-equiv="refresh" content="10">
+{% endif %}
+{% endblock %}
+
+
 {% block content %}
-<h2>QCM {{ qcm.nom }}<br></h2>
+<h2>QCM {{ qcm.nom }}</h2><br><br>
 {{ qcm.nomTeX }}
 {% if listecps %}
 <br><br>
@@ -11,6 +19,8 @@
 <input type="submit" value="Télécharger les notes" />
 </form>
 <br>
+Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} corrigée{{ nbcopiescorrigees|pluralize }}.
+<br><br><br>
 <table cellspacing="20%" class="tableaunotes">
 <tr><td><h3>N° copie</h3></td><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
 {% for cp in listecps %}
@@ -39,16 +49,16 @@
 <tr><td colspan="4">
 	{% for cjpg in cp.jpg %}
 	<a href="{% url 'prof.views.image' cjpg %}">
-	<img src="{% url 'prof.views.image' cjpg %}" style="height:228px"></a>
+	<img src="{% url 'prof.views.image' cjpg %}" style="height:456px"></a><!-- style="height:228px -->
 	{% endfor %}
 </td></tr>
 {% endfor %}
 </table>
 {% endif %}
-<h2>Composition du QCM<br></h2>
+<h2>Composition du QCM</h2><br>
 
 {% for exo in listexosqcm %}
-   <span style="text-decoration: underline;"> {{ exo.nom }} </span> ({{ exo.nb }} exerice{{ exo.nb|pluralize }})
+   <span style="text-decoration: underline;"> {{ exo.nom }} </span> ({{ exo.nb }} exercice{{ exo.nb|pluralize }})
 <br>
 {% endfor %} 
 
@@ -60,7 +70,9 @@
 	<input type="submit" value="{{ pdf.nom }}" />
 </form>
 {% endfor %}
-
+{% if encours %}
+<br> En cours de préparation...
+{% endif %}
 
 {% if listecopies %}
 <h2>Liste des copies chargées:</h2>
@@ -68,19 +80,22 @@
 	{% for cp in listecopies %}
 <tr><td>    {{ cp.nom }}</td><td>
 {% if not cp.corrigee %}
-<form action="{% url 'prof.views.qcmanage' %}" method="post">
-    {% csrf_token %}
-	{{ cp.formCor }}
-	<input type="submit" value="Corriger" />
-</form>
-{% endif %}
+: correction des copies en cours..{% endif %}
 </td></tr>
 {% endfor %} </table>
 {% endif %}
+ <br><br>
+{% if not encours %}
+{% if importpdfini %}
+<h2>Charger des copies à corriger:</h2>
 <table><tr>
 <form action="{% url 'prof.views.qcmanage' %}" method="post" enctype="multipart/form-data">
     {% csrf_token %}<td>
     <table>{{ formAjoutCopies}}</table></td><td> <input type="submit" value="Ajouter" /></td>
 </form></tr>
 </table>
+{% else %}
+Préparation des corrections automatiques...
+{% endif %}
+{% endif %}
 {% endblock %}

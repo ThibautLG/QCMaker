@@ -19,7 +19,8 @@ class ConfigurationImport():
 		self.sep=cv2.imread("sep.jpg",0)
 		self.pts=[cv2.imread("pt1.jpg",0),cv2.imread("pt2.jpg",0),cv2.imread("pt3.jpg",0),]
 		self.zones=[[(1000,1700),(0,400)],[(1300,1700),(2100,2400)],[(0,400),(2100,2300)]]
-		self.thresholdCase=0.75
+		self.thresholdCaseCode=0.75
+		self.thresholdCase=0.5 #0.75
 		self.dl=600
 		
 
@@ -45,12 +46,13 @@ class Copie():
 			tt.append(len(tloc))
 		t0=sorted(tt,reverse=True)[0]	
 		for i in range(nmax):
-			if tt[i]>=t0*self.conf.thresholdCase:
+			if tt[i]>=t0*self.conf.thresholdCaseCode:
 				code.append('0')
 			else:
 				code.append('1')
 		code="".join(code)
 		self.code=code
+		print(self.code)
 		
 	#méthode pour trouver les trois repères de la copie, qui serviront à mettre l'élève et l'original à la même échelle
 	def trouverpt(self,i):
@@ -66,7 +68,6 @@ class Copie():
 	#recherche le séparateur entre le code en 01010 et celui d'avant. Utilisé pour trouver l'image du code
 	def trouverSep(self):
 		
-		thresholdCoeff = 1
 		method = 'cv2.TM_SQDIFF_NORMED'
 		method = eval(method)
 		
@@ -171,7 +172,7 @@ class Eleve(Copie):
 			else:
 				self.reponses.append('1')
 				timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
-				cv2.rectangle(self.imgRGB, (pt[0],pt[1]), (pt[0] + w-1, pt[1] + h-1), (0,0,255), 2)
+				cv2.rectangle(self.imgRGB, (pt[0]-w/2,pt[1]-h/2), (pt[0] + 3*w/2, pt[1] + 3*h/2), (0,0,255), 2)
 		
 		#cv2.imwrite(self.conf.dossier+"/copie-"+self.code+"-"+str(random.random())+".jpg",self.imgRGB)
 		cv2.imwrite(self.imgFichier,self.imgRGB)

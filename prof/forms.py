@@ -5,6 +5,22 @@ from django import forms
 class Generer(forms.Form):
 	nbpdfs = forms.CharField(initial="30,30,30",label="Copies à générer")
 
+	def clean_nbpdfs(self):
+		nbpdfs = self.cleaned_data['nbpdfs']
+		nbpdfs_test = nbpdfs.split(",")
+
+		for nb in nbpdfs_test:
+			try:
+				int(nb)
+			except:
+				self.erreurici=True
+				raise forms.ValidationError("Format incorrect, vous devez entrer les nombre de copies pour chaque fichier pdf que vous souhaitez, séparés par une virgule.")
+			if int(nb) < 1 or int(nb)>50:
+				self.erreurici=True
+				raise forms.ValidationError("Chaque nombre doit être entre compris entre 1 et 50.")
+
+		return nbpdfs
+
 class ExoChoix(forms.Form):
 	
 	def setListe(self,listeChoix):
@@ -42,9 +58,6 @@ class MontrerImage(forms.Form):
 
 class AjoutCopies(forms.Form):
 	fichiercp = forms.FileField(label="Copies")
-	
-class Corriger(forms.Form):
-	ccorr = forms.IntegerField(widget=forms.HiddenInput())
 	
 class Telecharger(forms.Form):
 	fichieratel = forms.CharField(label="Fichier",widget=forms.HiddenInput())

@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'prof',
 )
 
+
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'templates'),
 )
@@ -62,7 +63,8 @@ AUTHENTICATION_BACKENDS = (
 
 # CAS_SERVER_URL = 'https://dgeo.sysadm.ec-m.fr/cas/p3/'
 CAS_SERVER_URL = 'https://auth.centrale-marseille.fr/cas/'
-CAS_VERSION = '2'
+# CAS_SERVER_URL = 'https://auth.ec-m.fr/cas/p3/'
+CAS_VERSION = '3'
 
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

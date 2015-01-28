@@ -19,7 +19,7 @@
 <table>
 {% for exo in listexosqcm %}
 <tr><td>
-    {{ exo.nb }} exerice{{ exo.nb|pluralize }} de {{ exo.nom }}</td><td></td><td><form action="{% url 'prof.views.qcmaker' %}" method="post">
+    {{ exo.nb }} exercice{{ exo.nb|pluralize }} de {{ exo.nom }}</td><td></td><td><form action="{% url 'prof.views.qcmaker' %}" method="post">
     {% csrf_token %}
 	{{ exo.formDel }}<input type="submit" value="X" />
 </form></td></tr>
