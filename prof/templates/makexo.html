@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Jeu d'exercices {{ banque.nom }}<br></h2> 
+<br>
+<form action="{% url 'prof.views.makexo' %}" method="post">
+	{% csrf_token %}
+	{{ formMain.type }}
+	<input type="submit" value="Valider" />
+	<br>
+	<br>
+	<center>
+		{{ formMain.question }}
+		<br><br>
+		{{ formMain.corrige }}
+	</center>
+	</form>
+	<br>
+	<form action="{% url 'prof.views.makexo' %}" method="post">
+		{% csrf_token %}
+		{{ formAjouterReponse.nouvellereponse }}
+		<input type="submit" value="Ajouter reponse"/>
+	</form>
+	{% if listereponses %}
+	Liste des réponses:<br><br>
+	{% for reponse in listereponses %}
+		{{ reponse.nom }}: {{ reponse.texte }} <br>	
+	{% endfor %}
+	{% endif %}
+{% endblock %}
