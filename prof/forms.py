@@ -6,18 +6,29 @@ class MakexoMain(forms.Form):
 
 	def setFields(self,exo):
 		self.fields['question'] = forms.CharField(initial=exo.question,label="",widget=forms.Textarea)
-		self.fields['corrige'] = forms.CharField(initial=exo.corrige,label="",widget=forms.Textarea)
+		self.fields['corrige'] = forms.CharField(initial=exo.corrige,label="",widget=forms.Textarea,required=False)
 		self.fields['question'].widget.attrs['cols']=u'90'
 		self.fields['corrige'].widget.attrs['cols']=u'90'
+		self.fields['idmainexo'] = forms.IntegerField(widget=forms.HiddenInput(),initial=exo.id)
 
+	idmainexo =  forms.IntegerField()
 	question = forms.CharField(initial="Question",label="",widget=forms.Textarea)
-	corrige = forms.CharField(initial="Correction",label="",widget=forms.Textarea) 	
+	corrige = forms.CharField(initial="Correction",label="",widget=forms.Textarea,required=False) 	
 	type = forms.ChoiceField(label="Type de correction",choices=[('1','Une bonne réponse')])
 
 class MakexoAjouterReponse(forms.Form):
 	
 	nouvellereponse = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
 
+class MakexoAjouterExo(forms.Form):
+	
+	nouvelexo = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
+
+class MakexoModifierExo(forms.Form):
+
+	def setId(self,id):
+		self.fields['idexo'] =  forms.IntegerField(widget=forms.HiddenInput(),initial=id)
+	idexo = forms.IntegerField()
 
 class MakexoReponse(forms.Form):
 

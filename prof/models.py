@@ -14,6 +14,7 @@ class CoreBanque(models.Model):
 	prof = models.ForeignKey(Enseignant)
 	
 class CoreQcm(models.Model):
+	prof = models.ForeignKey(Enseignant)
 	nom = models.CharField(max_length=200)
 	nomTeX = models.CharField(max_length=200,default="Matière - 2014/2015")
 	texteTeX = models.CharField(max_length=2000,default="\\centerline{Durée 30 minutes}\n\\medskip \n{\\it \n\\noindent\\underline{La correction est automatisée, {\\bf noircir}  les cases des réponses justes et laisser vides les autres cases.} \\\ \nAucun document autorisé, téléphones portables et calculatrices interdits.\\\ \nUn seule réponse juste par exercice. \\\ \nBarème: réponse juste = 1pt, réponse fausse  = -0.5pt \n}")

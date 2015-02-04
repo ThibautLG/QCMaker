@@ -631,12 +631,27 @@ def makexo(request):
 		return redirect('prof.views.home')
 
 	banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom="Banque test")
-	coreexo,creation = CoreExo.objects.get_or_create(banque=banque)
-
+	
+	if CoreExo.objects.filter(banque=banque):
+		try:
+			coreexo = CoreExo.objects.get(id=request.session['makexo'])
+			print('1')
+		except:
+			coreexo = CoreExo.objects.filter(banque=banque)[0]
+			request.session['makexo'] = coreexo.id
+			print('2')
+	else:
+		coreexo = CoreExo(banque=banque)
+		coreexo.save()
+		
 	if request.method == 'POST':
 		formMain = MakexoMain(request.POST)
 		formAjouterReponse = MakexoAjouterReponse(request.POST)
+		formAjouterExo = MakexoAjouterExo(request.POST)
+		formModifierExo = MakexoModifierExo(request.POST)
 		if formMain.is_valid():
+			print('ok')
+			coreexo = CoreExo.objects.get(id=formMain.cleaned_data['idmainexo'])
 			coreexo.question = formMain.cleaned_data['question']
 			coreexo.corrige = formMain.cleaned_data['corrige']
 			coreexo.type = formMain.cleaned_data['type']
@@ -644,6 +659,23 @@ def makexo(request):
 		elif formAjouterReponse.is_valid():
 			reponse = CoreReponse(exo=coreexo,texte="Reponse",nom="v")
 			reponse.save()
+		elif formAjouterExo.is_valid():
+			nouvelexo = CoreExo(banque=banque)
+			nouvelexo.save()
+		elif formModifierExo.is_valid():
+			try:
+				coreexo = CoreExo.objects.get(id=formModifierExo.cleaned_data['idexo'])
+				request.session['makexo']=coreexo.id
+			except:
+				print('Exercice d\'id '+str(formModifierExo.cleaned_data['idexo'])+' inexistant')
+			
+	
+	listeexos = list()
+	for exo in banque.coreexo_set.all():
+		formModifierExotemp = MakexoModifierExo()
+		formModifierExotemp.setId(exo.id)
+		listeexos.append({'question':exo.question,'reponses':'\n---\n'.join(x.texte for x in exo.corereponse_set.all()),'formModifierExo':formModifierExotemp})
+		
 
 	listereponses = list()
 	for reponse in coreexo.corereponse_set.all():
@@ -651,6 +683,8 @@ def makexo(request):
 	formMain = MakexoMain()
 	formMain.setFields(coreexo)
 	formAjouterReponse = MakexoAjouterReponse()
+	formAjouterExo = MakexoAjouterExo()
+	
 
 	return render(request, 'makexo.html', locals())
 
