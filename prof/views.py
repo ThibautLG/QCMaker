@@ -71,7 +71,8 @@ def correction(cps):
 	try:
 		dossier=os.path.dirname(cps.qcm.template.path)
 		os.mkdir(dossier+"/copies/"+str(cps.id))
-		sp.check_call(["convert", "-density", '200', cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
+		sp.check_call(["convert", "-size", "1653x2338", cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
+
 		listepickle=[x for x in os.listdir(dossier+"/originaux") if x.endswith('.pickle')]
 		originaux=list()
 		for p in listepickle:
