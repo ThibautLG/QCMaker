@@ -3,10 +3,18 @@
 {% block content %}
 <h2>Jeu d'exercices {{ banque.nom }}<br></h2> 
 <br>
+{% for exo in listeexos %}
+	<form action="{% url 'prof.views.makexo' %}" method="post">
+		{% csrf_token %}
+		{{ exo.formModifierExo }}
+		<input type="submit" value="Modifier"/>
+	</form>{{ exo.question }}<br><br>
+{{ exo.reponses }}
+{% endfor %}
 <form action="{% url 'prof.views.makexo' %}" method="post">
 	{% csrf_token %}
 	{{ formMain.type }}
-	<input type="submit" value="Valider" />
+	{{ formMain.idmainexo }}
 	<br>
 	<br>
 	<center>
@@ -14,8 +22,10 @@
 		<br><br>
 		{{ formMain.corrige }}
 	</center>
+	<input type="submit" value="Valider" />
 	</form>
 	<br>
+
 	<form action="{% url 'prof.views.makexo' %}" method="post">
 		{% csrf_token %}
 		{{ formAjouterReponse.nouvellereponse }}
@@ -27,4 +37,9 @@
 		{{ reponse.nom }}: {{ reponse.texte }} <br>	
 	{% endfor %}
 	{% endif %}
+	<form action="{% url 'prof.views.makexo' %}" method="post">
+		{% csrf_token %}
+		{{ formAjouterExo.nouvelexo }}
+		<input type="submit" value="Ajouter exercice"/>
+	</form>
 {% endblock %}

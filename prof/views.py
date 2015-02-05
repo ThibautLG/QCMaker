@@ -371,7 +371,7 @@ def home(request):
 	listeqcms = sorted(pr.qcm_set.all(), key=lambda r: int(r.id),reverse=True)
 	listeChoix = list()
 	for qcm in listeqcms:
-		listeChoix.append((qcm.nom,qcm.nom))
+		listeChoix.append((qcm.id,qcm.nom))
 	formChoix = QCMChoix()
 	formChoix.setListe(listeChoix)
 	listexostemp=pr.exo_set.all()
@@ -429,7 +429,7 @@ def qcmaker(request):
 		#si QCM existant
 		elif formChoix.is_valid():
 			try:
-				qcm=Qcm.objects.get(prof=pr,nom=formChoix.cleaned_data['qcm'])
+				qcm=Qcm.objects.get(prof=pr,id=int(formChoix.cleaned_data['qcm']))
 				request.session['qcm']=qcm.id
 			except Exception, er:
 				print("Erreur : ",er)
@@ -650,6 +650,7 @@ def makexo(request):
 		formAjouterReponse = MakexoAjouterReponse(request.POST)
 		formAjouterExo = MakexoAjouterExo(request.POST)
 		formModifierExo = MakexoModifierExo(request.POST)
+		formBanqueChoix = BanqueToMakexo(request.POST)
 		if formMain.is_valid():
 			print('ok')
 			coreexo = CoreExo.objects.get(id=formMain.cleaned_data['idmainexo'])
@@ -657,6 +658,8 @@ def makexo(request):
 			coreexo.corrige = formMain.cleaned_data['corrige']
 			coreexo.type = formMain.cleaned_data['type']
 			coreexo.save()
+		elif formBanqueChoix.is_valid():
+			banque = CoreBanque.objects.get(id=int(formBanqueChoix.cleaned_data['banque'])) 
 		elif formAjouterReponse.is_valid():
 			reponse = CoreReponse(exo=coreexo,texte="Reponse",nom="v")
 			reponse.save()

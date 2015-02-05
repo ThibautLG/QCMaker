@@ -26,6 +26,7 @@ class CoreNbExos(models.Model):
 	qcm = models.ForeignKey(CoreQcm)
 	
 class CoreExo(models.Model):
+	nom = models.CharField(max_length=200)
 	question = models.CharField(max_length=2000)
 	corrige = models.CharField(max_length=2000)
 	formule = models.CharField(max_length=200)
