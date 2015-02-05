@@ -2,9 +2,17 @@
 
 from django import forms
 
+class BanqueToMakexo(forms.Form):
+	
+	def setListe(self,listeChoix):
+		self.fields['banque'] = forms.ChoiceField(label="Liste de vos banques d'exercices",choices=listeChoix)
+		
+	banque = forms.ChoiceField(label="Liste de vos banques d'exercices")
+
 class MakexoMain(forms.Form):
 
 	def setFields(self,exo):
+		self.fields['nom'] = forms.CharField(initial=exo.nom,label="")
 		self.fields['question'] = forms.CharField(initial=exo.question,label="",widget=forms.Textarea)
 		self.fields['corrige'] = forms.CharField(initial=exo.corrige,label="",widget=forms.Textarea,required=False)
 		self.fields['question'].widget.attrs['cols']=u'90'
@@ -12,6 +20,7 @@ class MakexoMain(forms.Form):
 		self.fields['idmainexo'] = forms.IntegerField(widget=forms.HiddenInput(),initial=exo.id)
 
 	idmainexo =  forms.IntegerField()
+	nom = forms.CharField(initial="Nom de l'exercice",label="")
 	question = forms.CharField(initial="Question",label="",widget=forms.Textarea)
 	corrige = forms.CharField(initial="Correction",label="",widget=forms.Textarea,required=False) 	
 	type = forms.ChoiceField(label="Type de correction",choices=[('1','Une bonne réponse')])
