@@ -43,6 +43,8 @@ class MakexoReponse(forms.Form):
 
 	nom = forms.CharField(max_length=3)
 	texte = forms.CharField(max_length=2000,widget=forms.Textarea)
+	position = forms.ChoiceField(label="Position",choices=[('1','1')])
+
 
 class Generer(forms.Form):
 	nbpdfs = forms.CharField(initial="30,30,30",label="Copies à générer")
@@ -56,7 +58,7 @@ class Generer(forms.Form):
 				int(nb)
 			except:
 				self.erreurici=True
-				raise forms.ValidationError("Format incorrect, vous devez entrer les nombre de copies pour chaque fichier pdf que vous souhaitez, séparés par une virgule.")
+				raise forms.ValidationError("Format incorrect, vous devez entrer chaque les nombres de copies de chaque fichier pdf que vous souhaitez, séparés par une virgule.")
 			if int(nb) < 1 or int(nb)>50:
 				self.erreurici=True
 				raise forms.ValidationError("Chaque nombre doit être entre compris entre 1 et 50.")

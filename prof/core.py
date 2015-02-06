@@ -32,7 +32,7 @@ def exo2tex(exo):
     TeXexo.append(u"\\begin{exo}\n")
     TeXexo.append(exo.question+u"\n")
     TeXexo.append(u"\n\\medskip\n\\begin{minipage}{ \\textwidth}\\begin{itemize}[label=$\\square$]\n")
-    for reponse in sorted(exo.corereponse_set.all(), key=lambda r: int(r.id)):
+    for reponse in sorted(exo.corereponse_set.all(), key=lambda r: int(r.position)):
         TeXexo.append(u"\item "+reponse.texte+u"\n")
     TeXexo.append(u"\\end{itemize}\end{minipage}\n")
     TeXexo.append(u"\\end{exo}\n\\bigskip\n")
@@ -61,7 +61,7 @@ def genererTeX(qcmpdf,template):
     indexExos=TeX.index(sepTeXExos)
     TeX.remove(sepTeXExos)
 
-    for exo in sorted(qcmpdf.exos.all(), key=lambda r: int(r.id)):
+    for exo in sorted(qcmpdf.exos.all(), key=lambda r: int(CoreExoQcmPdf.objects.get(qcmpdf=qcmpdf,exo=r).position)):
         texexo = exo2tex(exo)
         for ligne in texexo:
             TeX.insert(indexExos,ligne)
@@ -128,12 +128,13 @@ def genererQcm(qcm,nbpdfstexte):
     paquet=0
     numero=1
 
-    listebanques = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
+    listebanques = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.position))
     
     for nb in nbpdfs:
         paquet+=1
-        for i in range(nb):
-            qcmpdf=CoreQcmPdf(numero=numero,code=str(qcm.id)+"-"+str(codes[numero]),qcm=qcm,paquet=paquet)
+	for i in range(nb):
+	    position=1
+	    qcmpdf=CoreQcmPdf(numero=numero,code=str(qcm.id)+"-"+str(codes[numero]),qcm=qcm,paquet=paquet)
             qcmpdf.save()
 
             for nbexos in listebanques:
@@ -141,7 +142,8 @@ def genererQcm(qcm,nbpdfstexte):
 		print(listeexos,nbexos.nb)
                 r=random.sample(range(len(listeexos)),nbexos.nb)
                 for i in r:
-                    exoqcmpdf = CoreExoQcmPdf(qcmpdf=qcmpdf,exo=listeexos[i])
+                    exoqcmpdf = CoreExoQcmPdf(qcmpdf=qcmpdf,exo=listeexos[i],position=position)
                     exoqcmpdf.save()
+		    position += 1
             numero+=1
             

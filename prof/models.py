@@ -24,6 +24,7 @@ class CoreNbExos(models.Model):
 	nb = models.IntegerField()
 	banque = models.ForeignKey(CoreBanque)
 	qcm = models.ForeignKey(CoreQcm)
+	position = models.IntegerField()
 	
 class CoreExo(models.Model):
 	nom = models.CharField(max_length=200)
@@ -37,6 +38,7 @@ class CoreReponse(models.Model):
 	exo = models.ForeignKey(CoreExo)
 	nom = models.CharField(max_length=200)
 	texte = models.CharField(max_length=2000)
+	position = models.IntegerField()
 	
 class CoreQcmPdf(models.Model):
 	numero = models.IntegerField()
@@ -44,11 +46,13 @@ class CoreQcmPdf(models.Model):
 	qcm = models.ForeignKey(CoreQcm)
 	paquet = models.IntegerField()
 	exos = models.ManyToManyField(CoreExo,through='CoreExoQcmPdf')
+	reponses = models.CharField(max_length=200, default="")
+
 	
 class CoreExoQcmPdf(models.Model):
 	qcmpdf = models.ForeignKey(CoreQcmPdf)
 	exo = models.ForeignKey(CoreExo)
-
+	position = models.IntegerField()
 
 # Create your models here.
 
