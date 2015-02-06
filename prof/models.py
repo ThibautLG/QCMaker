@@ -28,7 +28,7 @@ class CoreNbExos(models.Model):
 	
 class CoreExo(models.Model):
 	nom = models.CharField(max_length=200)
-	question = models.CharField(max_length=2000)
+	question = models.CharField(max_length=2000, default="En quoi l'escalade est un super sport?")
 	corrige = models.CharField(max_length=2000)
 	formule = models.CharField(max_length=200)
 	type = models.CharField(max_length=200)

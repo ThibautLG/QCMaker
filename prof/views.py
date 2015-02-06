@@ -627,9 +627,10 @@ def makexo(request):
 		return redirect('prof.views.ehome')
 	try:
 		pr=Enseignant.objects.get(nom=nom)
-		qcm=Qcm.objects.get(id=request.session['qcm'])
+		banque = request.session['banque']
 	except Exception,er:
-		return redirect('prof.views.home')
+	#	return redirect('prof.views.home')
+		pass
 
 	banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom="Banque test")
 	
@@ -651,6 +652,7 @@ def makexo(request):
 		formAjouterExo = MakexoAjouterExo(request.POST)
 		formModifierExo = MakexoModifierExo(request.POST)
 		formBanqueChoix = BanqueToMakexo(request.POST)
+		print(formMain)
 		if formMain.is_valid():
 			print('ok')
 			coreexo = CoreExo.objects.get(id=formMain.cleaned_data['idmainexo'])
@@ -661,7 +663,7 @@ def makexo(request):
 		elif formBanqueChoix.is_valid():
 			banque = CoreBanque.objects.get(id=int(formBanqueChoix.cleaned_data['banque'])) 
 		elif formAjouterReponse.is_valid():
-			reponse = CoreReponse(exo=coreexo,texte="Reponse",nom="v")
+			reponse = CoreReponse(exo=coreexo,texte="Reponse",nom="v",position=len(coreexo.corereponse_set.all())+1)
 			reponse.save()
 		elif formAjouterExo.is_valid():
 			nouvelexo = CoreExo(banque=banque)
@@ -682,7 +684,7 @@ def makexo(request):
 		
 
 	listereponses = list()
-	for reponse in coreexo.corereponse_set.all():
+	for reponse in sorted(coreexo.corereponse_set.all(), key=lambda r: int(r.position)):
 		listereponses.append({'nom':reponse.nom,'texte':reponse.texte})
 	formMain = MakexoMain()
 	formMain.setFields(coreexo)

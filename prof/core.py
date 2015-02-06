@@ -61,7 +61,8 @@ def genererTeX(qcmpdf,template):
     indexExos=TeX.index(sepTeXExos)
     TeX.remove(sepTeXExos)
 
-    for exo in sorted(qcmpdf.exos.all(), key=lambda r: int(CoreExoQcmPdf.objects.get(qcmpdf=qcmpdf,exo=r).position)):
+    for exoqcmpdf in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=qcmpdf), key=lambda r: int(r.position)):
+	exo = exoqcmpdf.exo
         texexo = exo2tex(exo)
         for ligne in texexo:
             TeX.insert(indexExos,ligne)

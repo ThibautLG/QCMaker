@@ -20,7 +20,7 @@ class MakexoMain(forms.Form):
 		self.fields['idmainexo'] = forms.IntegerField(widget=forms.HiddenInput(),initial=exo.id)
 
 	idmainexo =  forms.IntegerField()
-	nom = forms.CharField(initial="Nom de l'exercice",label="")
+	#nom = forms.CharField(initial="Nom de l'exercice",label="")
 	question = forms.CharField(initial="Question",label="",widget=forms.Textarea)
 	corrige = forms.CharField(initial="Correction",label="",widget=forms.Textarea,required=False) 	
 	type = forms.ChoiceField(label="Type de correction",choices=[('1','Une bonne réponse')])
