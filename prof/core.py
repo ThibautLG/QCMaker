@@ -109,7 +109,15 @@ def genererPdfs(qcm,dossier):
         pdfuniteArg.append('pdfunite')
         paquet+=1
 
-    
+def randomSample(taillesample,taillebanque,ntotal):
+	
+	random.seed()
+	ret = list()
+	for i in range(ntotal):
+		ret.append(random.sample(taillebanque,taillesample)
+
+
+
 def genererQcm(qcm,nbpdfstexte):
     
     nbpdfstexte=nbpdfstexte.split(',')
@@ -130,7 +138,11 @@ def genererQcm(qcm,nbpdfstexte):
     numero=1
 
     listebanques = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.position))
-    
+    rand = list()
+    for nbexos in listebanques:
+	rand.append(randomSample(nbexos.nb,len(nbexos.banque.coreexo_set.all()),ntotal)
+
+
     for nb in nbpdfs:
         paquet+=1
 	for i in range(nb):
@@ -138,13 +150,16 @@ def genererQcm(qcm,nbpdfstexte):
 	    qcmpdf=CoreQcmPdf(numero=numero,code=str(qcm.id)+"-"+str(codes[numero]),qcm=qcm,paquet=paquet)
             qcmpdf.save()
 
+	    numerobanque = 0
             for nbexos in listebanques:
                 listeexos = nbexos.banque.coreexo_set.all()
-		print(listeexos,nbexos.nb)
-                r=random.sample(range(len(listeexos)),nbexos.nb)
+                #r=random.sample(range(len(listeexos)),nbexos.nb)
+		r=rand[numerobanque][numero-1]
                 for i in r:
                     exoqcmpdf = CoreExoQcmPdf(qcmpdf=qcmpdf,exo=listeexos[i],position=position)
                     exoqcmpdf.save()
 		    position += 1
+
+		numerobanque += 1
             numero+=1
             
