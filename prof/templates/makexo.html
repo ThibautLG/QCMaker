@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block content %}
 <h2>Jeu d'exercices {{ banque.nom }}<br></h2> 
 <br>
@@ -42,4 +41,5 @@
 		{{ formAjouterExo.nouvelexo }}
 		<input type="submit" value="Ajouter exercice"/>
 	</form>
+	<img src="{% url 'prof.views.svg' exosvg %}" style="width:100%">
 {% endblock %}

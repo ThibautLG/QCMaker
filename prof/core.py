@@ -53,9 +53,21 @@ def ntosymb(n,nmax):
     return symb
     
 
+def genererTeXHTML(exo,template):
+
+    with codecs.open(template, 'r', 'utf-8') as f:
+        TeX=f.readlines()
+    indexExos=TeX.index(sepTeXExos)
+    TeX.remove(sepTeXExos)
+    texexo = exo2tex(exo)
+    for ligne in texexo:
+	TeX.insert(indexExos,ligne)
+	indexExos+=1
+    return TeX
+
+
 def genererTeX(qcmpdf,template):
     
-
     with codecs.open(template, 'r', 'utf-8') as f:
         TeX=f.readlines()
     indexExos=TeX.index(sepTeXExos)
@@ -74,6 +86,19 @@ def genererTeX(qcmpdf,template):
 
     return TeX
 
+
+def genererSvg(exo,dossier):
+    
+    template = "templateHTML.tex"
+    with codecs.open(dossier+'/exo-'+str(exo.id)+'.tex','w','utf-8') as f:
+	for ligne in genererTeXHTML(exo,'templateHTML.tex'):
+	    f.write(ligne)
+    sp.call(['pdflatex','-output-directory',dossier,dossier+'/exo-'+str(exo.id)+'.tex'])
+    sp.call(['pdf2svg',dossier+'/exo-'+str(exo.id)+'.pdf',dossier+'/exo-'+str(exo.id)+'.svg'])
+    os.remove(dossier+'/exo-'+str(exo.id)+'.aux')
+    os.remove(dossier+'/exo-'+str(exo.id)+'.log')
+    os.remove(dossier+'/exo-'+str(exo.id)+'.tex')
+    os.remove(dossier+'/exo-'+str(exo.id)+'.pdf')
 
 def genererPdfs(qcm,dossier):
     
@@ -114,9 +139,9 @@ def randomSample(taillesample,taillebanque,ntotal):
 	random.seed()
 	ret = list()
 	for i in range(ntotal):
-		ret.append(random.sample(taillebanque,taillesample)
+		ret.append(random.sample(taillebanque,taillesample))
 
-
+	return ret
 
 def genererQcm(qcm,nbpdfstexte):
     
@@ -140,7 +165,7 @@ def genererQcm(qcm,nbpdfstexte):
     listebanques = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.position))
     rand = list()
     for nbexos in listebanques:
-	rand.append(randomSample(nbexos.nb,len(nbexos.banque.coreexo_set.all()),ntotal)
+	rand.append(randomSample(nbexos.nb,len(nbexos.banque.coreexo_set.all()),ntotal))
 
 
     for nb in nbpdfs:

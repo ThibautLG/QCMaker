@@ -15,6 +15,7 @@ urlpatterns = patterns('',
     url(r'^qcmanage','prof.views.qcmanage'),
     url(r'^makexo','prof.views.makexo'),
     url(r'^image/(?P<id_cc>\d+)','prof.views.image'),
+    url(r'^svg/(?P<id_svg>\d+)','prof.views.svg'),
     url(r'^login', 'django_cas.views.login'), 
     url(r'^logout', 'django_cas.views.logout'), 
 )

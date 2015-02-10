@@ -13,6 +13,7 @@ import qcmcorrecteur as qcmc
 from django.core.files import File
 import random
 from bgjob import BgJob
+import prof.core as core
 #from django_rq import job
 
 
@@ -266,6 +267,22 @@ def telecharger(request,objet):
 	response['Content-Disposition'] = "attachment; filename=%s" % filename
 	return response
    
+
+def svg(request,id_svg):
+	
+	if not request.user.is_active:
+		return redirect('django_cas.views.login')
+	nom=str(request.user.username)
+	
+	try:
+		pr = Enseignant.objects.get(nom=nom)
+		svg = "media/ups/"+str(pr.id)+"/exo-"+str(id_svg)+".svg"
+		return telecharger(request,svg)
+	except Exception, er:
+		print("Erreur : ",er)
+		return HttpResponse("Non disponible")
+	
+
 def image(request,id_cc):
 	
 	if not request.user.is_active:
@@ -633,6 +650,7 @@ def makexo(request):
 		pass
 
 	banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom="Banque test")
+	dossier = 'media/ups/'+str(pr.id)
 	
 	if CoreExo.objects.filter(banque=banque):
 		try:
@@ -660,11 +678,13 @@ def makexo(request):
 			coreexo.corrige = formMain.cleaned_data['corrige']
 			coreexo.type = formMain.cleaned_data['type']
 			coreexo.save()
+			core.genererSvg(coreexo,dossier)
 		elif formBanqueChoix.is_valid():
 			banque = CoreBanque.objects.get(id=int(formBanqueChoix.cleaned_data['banque'])) 
 		elif formAjouterReponse.is_valid():
 			reponse = CoreReponse(exo=coreexo,texte="Reponse",nom="v",position=len(coreexo.corereponse_set.all())+1)
 			reponse.save()
+			core.genererSvg(coreexo,dossier)
 		elif formAjouterExo.is_valid():
 			nouvelexo = CoreExo(banque=banque)
 			nouvelexo.save()
@@ -686,6 +706,8 @@ def makexo(request):
 	listereponses = list()
 	for reponse in sorted(coreexo.corereponse_set.all(), key=lambda r: int(r.position)):
 		listereponses.append({'nom':reponse.nom,'texte':reponse.texte})
+	
+	exosvg = str(coreexo.id)
 	formMain = MakexoMain()
 	formMain.setFields(coreexo)
 	formAjouterReponse = MakexoAjouterReponse()
