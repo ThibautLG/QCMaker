@@ -28,6 +28,8 @@
 	<form action="{% url 'prof.views.makexo' %}" method="post">
 		{% csrf_token %}
 		{{ formAjouterReponse.nouvellereponse }}
+		{{ formAjouterReponse.nom }}
+		{{ formAjouterReponse.reponse }}
 		<input type="submit" value="Ajouter reponse"/>
 	</form>
 	{% if listereponses %}
@@ -41,5 +43,6 @@
 		{{ formAjouterExo.nouvelexo }}
 		<input type="submit" value="Ajouter exercice"/>
 	</form>
+	Preview<br>
 	<img src="{% url 'prof.views.svg' exosvg %}" style="width:100%">
 {% endblock %}

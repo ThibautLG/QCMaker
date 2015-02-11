@@ -34,6 +34,7 @@ pdfTeX 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian)
 et ImageMagick:
 ImageMagick 6.7.7-10 2014-03-08 Q16
 
+et pdf2svg
 
 
 

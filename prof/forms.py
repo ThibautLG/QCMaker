@@ -28,6 +28,8 @@ class MakexoMain(forms.Form):
 class MakexoAjouterReponse(forms.Form):
 	
 	nouvellereponse = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
+	nom = forms.CharField(initial="V",label="",required=True)
+	reponse = forms.CharField(initial="Réponse",label="",widget=forms.Textarea,required=True)
 
 class MakexoAjouterExo(forms.Form):
 	
