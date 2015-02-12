@@ -7,7 +7,7 @@ class BanqueToMakexo(forms.Form):
 	def setListe(self,listeChoix):
 		self.fields['banque'] = forms.ChoiceField(label="Liste de vos banques d'exercices",choices=listeChoix)
 		
-	banque = forms.ChoiceField(label="Liste de vos banques d'exercices")
+	banque = forms.ChoiceField()
 
 class MakexoMain(forms.Form):
 

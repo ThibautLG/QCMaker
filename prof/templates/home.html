@@ -12,21 +12,9 @@
     {% csrf_token %}
     {{ formNQCM}} <input type="submit" class="btn" value="Créer" />
 </form>
-{% if listexos %}
-<h2>Liste de vos exos:</h2>
-<table>
-{% for exo in listexos %} 
-  <tr>
-    <td>{{ exo.nom }}</td>
-    <td><form action="{% url 'prof.views.home' %}" method="post">
+<br><center>---</center><br>
+<form action="{% url 'prof.views.home' %}" method="post">
     {% csrf_token %}
-	{{ exo.formFDel }}<input type="submit" value="X"/></form></td>
-  </tr>
-{% endfor %}
-</table> 
-{% endif %}
-<form action="{% url 'prof.views.home' %}" method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ formNExos }} <input type="submit" value="Ajouter" class="btn"/>
+    {{ formBanque }} <input type="submit" class="btn" value="Accéder" />
 </form>
 {% endblock %}

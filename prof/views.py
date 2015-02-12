@@ -369,34 +369,36 @@ def home(request):
 	if not is_prof(nom):
 		return redirect('prof.views.ehome')
 	pr,nouveauprof=Enseignant.objects.get_or_create(nom=nom)
-	if request.method == 'POST':
-		formNExos = NouveauxExos(request.POST,request.FILES)
-		if formNExos.is_valid():
-			e,creation=Exo.objects.get_or_create(prof=pr,nom=str(formNExos.cleaned_data["exos"]))
-			if creation:
-				e.fichier = formNExos.cleaned_data["exos"]
-				e.save()
+
+	formBanque = BanqueToMakexo(request.POST)
+	listebanquestemp=pr.corebanque_set.all()
+	listebanques=list()
+	for banque in listebanquestemp:
+		listebanques.append((banque.id,banque.nom))
+	formBanque.setListe(listebanques)	
 		
-		formFDel=EffacerFExo(request.POST)
-		if formFDel.is_valid():
-			td=Exo.objects.get(id=formFDel.cleaned_data['fexo'])
-			td.delete()
+	if request.method == 'POST':
+		if formBanque.is_valid():
+			print('ok')
+			request.session['banque'] = formBanque.cleaned_data['banque']
+			return redirect('prof.views.banque')
 			
-	formFDel = EffacerFExo()
 	formNQCM = NouveauQCM()
-	formNExos = NouveauxExos()
+	formBanque = BanqueToMakexo()
+	formChoix = QCMChoix()
 	listeqcms = sorted(pr.qcm_set.all(), key=lambda r: int(r.id),reverse=True)
 	listeChoix = list()
 	for qcm in listeqcms:
 		listeChoix.append((qcm.id,qcm.nom))
-	formChoix = QCMChoix()
 	formChoix.setListe(listeChoix)
-	listexostemp=pr.exo_set.all()
-	listexos=list()
-	for fexo in listexostemp:
-		tform=EffacerFExo(initial={'fexo':fexo.id})
-		listexos.append({'nom':fexo.nom,'formFDel':tform})
+
+	listebanquestemp=pr.corebanque_set.all()
+	listebanques=list()
+	for banque in listebanquestemp:
+		listebanques.append((banque.id,banque.nom))
+	formBanque.setListe(listebanques)	
 		
+	
 	return render(request, 'home.html', locals())
 
 def qcmaker(request):
@@ -716,3 +718,26 @@ def makexo(request):
 
 	return render(request, 'makexo.html', locals())
 
+def banque(request):
+
+	if not request.user.is_active:
+		return redirect('django_cas.views.login')
+	nom=str(request.user.username)
+	if not is_prof(nom):
+		return redirect('prof.views.ehome')
+	try:
+		pr=Enseignant.objects.get(nom=nom)
+		banque = request.session['banque']
+	except Exception,er:
+	#	return redirect('prof.views.home')
+		pass
+
+	banque = CoreBanque.objects.get(id=request.session['banque'])
+	dossier = 'media/ups/'+str(pr.id)
+	
+	listesvg = list()
+	for exo in banque.coreexo_set.all():
+		listesvg.append(exo)
+
+	formAjouterExo = MakexoAjouterExo()
+	return render(request, 'banque.html', locals())
