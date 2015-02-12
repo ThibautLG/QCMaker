@@ -4,16 +4,15 @@
 <br>
 	{% for exo in listesvg %}
 	<div style="width:100%; height:190px; overflow:hidden;">
-		<ul>
-		<li>
+		<img src="{% url 'prof.views.svg' exo.id %}">
+	</div>
+	<div style="text-align: center;" >
 		<form action="{% url 'prof.views.makexo' %}" method="post">
 		{% csrf_token %}
-		{{ formAjouterExo.nouvelexo }}
-		<input type="submit" value="Ajouter exercice"/>
-	</form></li><li>
-	<img src="{% url 'prof.views.svg' exo.id %}">
-	</li>
-</ul>
-	</div>
+		{{ formModifierExo }}
+		<input type="submit" value="Modifier exercice"/>
+	</form>
+<br>---<br>
+</div>
 	{% endfor %}
 {% endblock %}

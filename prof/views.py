@@ -740,4 +740,5 @@ def banque(request):
 		listesvg.append(exo)
 
 	formAjouterExo = MakexoAjouterExo()
+	formModifierExo = MakexoModifierExo()
 	return render(request, 'banque.html', locals())
