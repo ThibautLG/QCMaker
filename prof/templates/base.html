@@ -11,7 +11,7 @@
 <div class="navbar navbar-fixed-top">
 <div class="navbar inner">
 
-<h1>{% block bienvenue %}<a href="{% url 'prof.views.home' %}"> QCM /  {% if pr %} {{ pr.nom }} {% endif %}{% if el %} {{ el.nom }} {% endif %}</a>{% endblock %}</h1>
+	<h1>{% block bienvenue %}<a href="{% url 'prof.views.home' %}"> QCM /  {% if pr %} {{ pr.nom }} {% endif %}{% if el %} {{ el.nom }} {% endif %}</a>{% if banque %} // <a href="{% url 'prof.views.banque' %}"> {{ banque.nom }} </a>{% endif %}{% endblock %}</h1>
 <p class="pull-right"><a href="{% url 'django_cas.views.logout' %}">Déconnexion</a></p>
 
 </div>

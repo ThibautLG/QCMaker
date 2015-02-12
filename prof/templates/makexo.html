@@ -1,36 +1,32 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Jeu d'exercices {{ banque.nom }}<br></h2> 
+
 <br>
-{% for exo in listeexos %}
-	<form action="{% url 'prof.views.makexo' %}" method="post">
-		{% csrf_token %}
-		{{ exo.formModifierExo }}
-		<input type="submit" value="Modifier"/>
-	</form>{{ exo.question }}<br><br>
-{{ exo.reponses }}
-{% endfor %}
 <form action="{% url 'prof.views.makexo' %}" method="post">
+	<center>
 	{% csrf_token %}
 	{{ formMain.type }}
 	{{ formMain.idmainexo }}
 	<br>
 	<br>
-	<center>
 		{{ formMain.question }}
 		<br><br>
 		{{ formMain.corrige }}
-	</center>
+		<br><br>
 	<input type="submit" value="Valider" />
+	</center>
 	</form>
 	<br>
-
+	
 	<form action="{% url 'prof.views.makexo' %}" method="post">
+		<center>
 		{% csrf_token %}
 		{{ formAjouterReponse.nouvellereponse }}
-		{{ formAjouterReponse.nom }}
 		{{ formAjouterReponse.reponse }}
+		<br><br>
+		{{ formAjouterReponse.nom }}
 		<input type="submit" value="Ajouter reponse"/>
+	</center>
 	</form>
 	{% if listereponses %}
 	Liste des réponses:<br><br>
@@ -38,11 +34,7 @@
 		{{ reponse.nom }}: {{ reponse.texte }} <br>	
 	{% endfor %}
 	{% endif %}
-	<form action="{% url 'prof.views.makexo' %}" method="post">
-		{% csrf_token %}
-		{{ formAjouterExo.nouvelexo }}
-		<input type="submit" value="Ajouter exercice"/>
-	</form>
-	Preview<br>
+	<br>
+	<h2>Prévisualisation</h2>
 	<img src="{% url 'prof.views.svg' exosvg %}" style="width:100%">
 {% endblock %}

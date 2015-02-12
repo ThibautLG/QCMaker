@@ -29,14 +29,14 @@ class CoreNbExos(models.Model):
 class CoreExo(models.Model):
 	nom = models.CharField(max_length=200)
 	question = models.CharField(max_length=2000, default="En quoi l'escalade est un super sport?")
-	corrige = models.CharField(max_length=2000)
+	corrige = models.CharField(max_length=2000, default="Parce qu'il n'y a pas mieux!\n\\[\n\\int_0^\\infty e^{-x}dx = 1 \n\\]" )
 	formule = models.CharField(max_length=200)
 	type = models.CharField(max_length=200)
 	banque = models.ForeignKey(CoreBanque)
 	
 class CoreReponse(models.Model):
 	exo = models.ForeignKey(CoreExo)
-	nom = models.CharField(max_length=200)
+	nom = models.CharField(max_length=1)
 	texte = models.CharField(max_length=2000)
 	position = models.IntegerField()
 	

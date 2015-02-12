@@ -26,17 +26,23 @@ sepCodeExo = "%%%codeExo\n"
 sepNom = "%%%nomQCM\n"
 sepTexte = "%%%texteQCM\n"
 
-def exo2tex(exo):
+def exo2tex(exo,correction):
 
     TeXexo=list() #liste contenant le code TeX pour la liste aGen d'exos, aGen est une list() de numéros d'exos de cette instance de classe, dont on doit générer le 
     TeXexo.append(u"\\begin{exo}\n")
     TeXexo.append(exo.question+u"\n")
     TeXexo.append(u"\n\\medskip\n\\begin{minipage}{ \\textwidth}\\begin{itemize}[label=$\\square$]\n")
     for reponse in sorted(exo.corereponse_set.all(), key=lambda r: int(r.position)):
-        TeXexo.append(u"\item "+reponse.texte+u"\n")
+	if reponse.nom == "v" and correction:
+		TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
+	else:
+		TeXexo.append(u"\item "+reponse.texte+u"\n")
     TeXexo.append(u"\\end{itemize}\end{minipage}\n")
     TeXexo.append(u"\\end{exo}\n\\bigskip\n")
-
+    if correction:
+	TeXexo.append(u"\\begin{cor}\n{\\color{red}")
+	TeXexo.append(exo.corrige)
+	TeXexo.append(u"}\n\\end{cor}\n\\bigskip")
     return TeXexo
 
     
@@ -59,7 +65,7 @@ def genererTeXHTML(exo,template):
         TeX=f.readlines()
     indexExos=TeX.index(sepTeXExos)
     TeX.remove(sepTeXExos)
-    texexo = exo2tex(exo)
+    texexo = exo2tex(exo,True)
     for ligne in texexo:
 	TeX.insert(indexExos,ligne)
 	indexExos+=1
@@ -75,7 +81,7 @@ def genererTeX(qcmpdf,template):
 
     for exoqcmpdf in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=qcmpdf), key=lambda r: int(r.position)):
 	exo = exoqcmpdf.exo
-        texexo = exo2tex(exo)
+        texexo = exo2tex(exo,False)
         for ligne in texexo:
             TeX.insert(indexExos,ligne)
             indexExos+=1
@@ -97,7 +103,7 @@ def genererSvg(exo,dossier):
     sp.call(['pdf2svg',dossier+'/exo-'+str(exo.id)+'.pdf',dossier+'/exo-'+str(exo.id)+'.svg'])
     os.remove(dossier+'/exo-'+str(exo.id)+'.aux')
     os.remove(dossier+'/exo-'+str(exo.id)+'.log')
-    os.remove(dossier+'/exo-'+str(exo.id)+'.tex')
+    #os.remove(dossier+'/exo-'+str(exo.id)+'.tex')
     os.remove(dossier+'/exo-'+str(exo.id)+'.pdf')
 
 def genererPdfs(qcm,dossier):

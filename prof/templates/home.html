@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+<center><h2>QCMs</h2><br></center>
 {% if listeChoix %}
 <form action="{% url 'prof.views.qcmaker' %}" method="post">
     {% csrf_token %}
@@ -13,8 +14,15 @@
     {{ formNQCM}} <input type="submit" class="btn" value="Créer" />
 </form>
 <br><center>---</center><br>
+
+<center><h2>Banques d'exercices</h2><br></center>
 <form action="{% url 'prof.views.home' %}" method="post">
     {% csrf_token %}
     {{ formBanque }} <input type="submit" class="btn" value="Accéder" />
 </form>
+<form action="{% url 'prof.views.home' %}" method="post">
+    {% csrf_token %}
+    {{ formNouvelleBanque }} <input type="submit" class="btn" value="Ajouter" />
+</form>
+
 {% endblock %}

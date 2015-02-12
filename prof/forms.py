@@ -2,6 +2,10 @@
 
 from django import forms
 
+class AjouterBanque(forms.Form):
+
+	nouvellebanque = forms.CharField(label="",initial="Nouvelle banque")
+
 class BanqueToMakexo(forms.Form):
 	
 	def setListe(self,listeChoix):
@@ -15,20 +19,20 @@ class MakexoMain(forms.Form):
 		self.fields['nom'] = forms.CharField(initial=exo.nom,label="")
 		self.fields['question'] = forms.CharField(initial=exo.question,label="",widget=forms.Textarea)
 		self.fields['corrige'] = forms.CharField(initial=exo.corrige,label="",widget=forms.Textarea,required=False)
-		self.fields['question'].widget.attrs['cols']=u'90'
-		self.fields['corrige'].widget.attrs['cols']=u'90'
+		self.fields['question'].widget.attrs['cols']=u'100%'
+		self.fields['corrige'].widget.attrs['cols']=u'100%'
 		self.fields['idmainexo'] = forms.IntegerField(widget=forms.HiddenInput(),initial=exo.id)
 
 	idmainexo =  forms.IntegerField()
 	#nom = forms.CharField(initial="Nom de l'exercice",label="")
-	question = forms.CharField(initial="Question",label="",widget=forms.Textarea)
-	corrige = forms.CharField(initial="Correction",label="",widget=forms.Textarea,required=False) 	
-	type = forms.ChoiceField(label="Type de correction",choices=[('1','Une bonne réponse')])
+	question = forms.CharField()
+	corrige = forms.CharField(required=False)
+	type = forms.ChoiceField(label="Type de correction",choices=[('1','Une seule réponse possible')])
 
 class MakexoAjouterReponse(forms.Form):
 	
 	nouvellereponse = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
-	nom = forms.CharField(initial="V",label="",required=True)
+	nom = forms.CharField(initial="v",max_length=1,label="",required=True)
 	reponse = forms.CharField(initial="Réponse",label="",widget=forms.Textarea,required=True)
 
 class MakexoAjouterExo(forms.Form):
@@ -41,11 +45,6 @@ class MakexoModifierExo(forms.Form):
 		self.fields['idexo'] =  forms.IntegerField(widget=forms.HiddenInput(),initial=id)
 	idexo = forms.IntegerField()
 
-class MakexoReponse(forms.Form):
-
-	nom = forms.CharField(max_length=3)
-	texte = forms.CharField(max_length=2000,widget=forms.Textarea)
-	position = forms.ChoiceField(label="Position",choices=[('1','1')])
 
 
 class Generer(forms.Form):
@@ -119,7 +118,7 @@ class Note(forms.Form):
 	copiecorrigeeid = forms.IntegerField(widget=forms.HiddenInput())
 
 class NouveauQCM(forms.Form):
-	titre = forms.CharField(max_length=100,label="Nouveau QCM")
+	titre = forms.CharField(max_length=100,label="",initial="Nouveau QCM")
 
 class NouveauxExos(forms.Form):
 	exos = forms.FileField(label="Charger un nouveau fichier .exos")

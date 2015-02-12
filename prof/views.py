@@ -362,19 +362,21 @@ def ehome(request):
 	return render(request, 'ehome.html', locals())
 	
 def home(request):
-	
+
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
+	print(nom)
 	if not is_prof(nom):
 		return redirect('prof.views.ehome')
 	pr,nouveauprof=Enseignant.objects.get_or_create(nom=nom)
 
+	formNouvelleBanque = AjouterBanque(request.POST)
 	formBanque = BanqueToMakexo(request.POST)
 	listebanquestemp=pr.corebanque_set.all()
 	listebanques=list()
-	for banque in listebanquestemp:
-		listebanques.append((banque.id,banque.nom))
+	for banq in listebanquestemp:
+		listebanques.append((banq.id,banq.nom))
 	formBanque.setListe(listebanques)	
 		
 	if request.method == 'POST':
@@ -382,10 +384,18 @@ def home(request):
 			print('ok')
 			request.session['banque'] = formBanque.cleaned_data['banque']
 			return redirect('prof.views.banque')
-			
+		elif formNouvelleBanque.is_valid():
+			print(pr)
+			banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom=formNouvelleBanque.cleaned_data['nouvellebanque'])
+			banque.save()
+			request.session['banque'] = banque.id
+			return redirect('prof.views.banque')
+
 	formNQCM = NouveauQCM()
 	formBanque = BanqueToMakexo()
 	formChoix = QCMChoix()
+	formNouvelleBanque = AjouterBanque()
+
 	listeqcms = sorted(pr.qcm_set.all(), key=lambda r: int(r.id),reverse=True)
 	listeChoix = list()
 	for qcm in listeqcms:
@@ -394,8 +404,8 @@ def home(request):
 
 	listebanquestemp=pr.corebanque_set.all()
 	listebanques=list()
-	for banque in listebanquestemp:
-		listebanques.append((banque.id,banque.nom))
+	for banq in listebanquestemp:
+		listebanques.append((banq.id,banq.nom))
 	formBanque.setListe(listebanques)	
 		
 	
@@ -646,33 +656,25 @@ def makexo(request):
 		return redirect('prof.views.ehome')
 	try:
 		pr=Enseignant.objects.get(nom=nom)
-		banque = request.session['banque']
 	except Exception,er:
 	#	return redirect('prof.views.home')
 		pass
 
-	banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom="Banque test")
+	banque,creation = CoreBanque.objects.get_or_create(prof=pr,id=request.session['banque'])
 	dossier = 'media/ups/'+str(pr.id)
+
+	if not request.session['makexo']:
+		return redirect('prof.views.banque')
 	
-	if CoreExo.objects.filter(banque=banque):
-		try:
-			coreexo = CoreExo.objects.get(id=request.session['makexo'])
-			print('1')
-		except:
-			coreexo = CoreExo.objects.filter(banque=banque)[0]
-			request.session['makexo'] = coreexo.id
-			print('2')
-	else:
-		coreexo = CoreExo(banque=banque)
-		coreexo.save()
-		
+	try:
+		coreexo = CoreExo.objects.get(id=request.session['makexo'])
+	except:
+		print('Exercice d\'id '+str(formModifierExo.cleaned_data['idexo'])+' inexistant')
+		return redirect('prof.views.banque')
+
 	if request.method == 'POST':
 		formMain = MakexoMain(request.POST)
 		formAjouterReponse = MakexoAjouterReponse(request.POST)
-		formAjouterExo = MakexoAjouterExo(request.POST)
-		formModifierExo = MakexoModifierExo(request.POST)
-		formBanqueChoix = BanqueToMakexo(request.POST)
-		print(formMain)
 		if formMain.is_valid():
 			print('ok')
 			coreexo = CoreExo.objects.get(id=formMain.cleaned_data['idmainexo'])
@@ -681,40 +683,22 @@ def makexo(request):
 			coreexo.type = formMain.cleaned_data['type']
 			coreexo.save()
 			core.genererSvg(coreexo,dossier)
-		elif formBanqueChoix.is_valid():
-			banque = CoreBanque.objects.get(id=int(formBanqueChoix.cleaned_data['banque'])) 
 		elif formAjouterReponse.is_valid():
-			reponse = CoreReponse(exo=coreexo,texte="Reponse",nom="v",position=len(coreexo.corereponse_set.all())+1)
+			reponse = CoreReponse(exo=coreexo,texte=formAjouterReponse.cleaned_data['reponse'],nom=formAjouterReponse.cleaned_data['nom'],position=len(coreexo.corereponse_set.all())+1)
 			reponse.save()
 			core.genererSvg(coreexo,dossier)
-		elif formAjouterExo.is_valid():
-			nouvelexo = CoreExo(banque=banque)
-			nouvelexo.save()
-		elif formModifierExo.is_valid():
-			try:
-				coreexo = CoreExo.objects.get(id=formModifierExo.cleaned_data['idexo'])
-				request.session['makexo']=coreexo.id
-			except:
-				print('Exercice d\'id '+str(formModifierExo.cleaned_data['idexo'])+' inexistant')
 			
 	
-	listeexos = list()
-	for exo in banque.coreexo_set.all():
-		formModifierExotemp = MakexoModifierExo()
-		formModifierExotemp.setId(exo.id)
-		listeexos.append({'question':exo.question,'reponses':'\n---\n'.join(x.texte for x in exo.corereponse_set.all()),'formModifierExo':formModifierExotemp})
-		
 
 	listereponses = list()
 	for reponse in sorted(coreexo.corereponse_set.all(), key=lambda r: int(r.position)):
 		listereponses.append({'nom':reponse.nom,'texte':reponse.texte})
 	
+
 	exosvg = str(coreexo.id)
 	formMain = MakexoMain()
 	formMain.setFields(coreexo)
 	formAjouterReponse = MakexoAjouterReponse()
-	formAjouterExo = MakexoAjouterExo()
-	
 
 	return render(request, 'makexo.html', locals())
 
@@ -727,17 +711,33 @@ def banque(request):
 		return redirect('prof.views.ehome')
 	try:
 		pr=Enseignant.objects.get(nom=nom)
-		banque = request.session['banque']
 	except Exception,er:
 	#	return redirect('prof.views.home')
 		pass
 
 	banque = CoreBanque.objects.get(id=request.session['banque'])
 	dossier = 'media/ups/'+str(pr.id)
+	request.session['makexo']=""
+
+	if request.method == 'POST':
+		formAjouterExo = MakexoAjouterExo(request.POST) 
+		formModifierExo = MakexoModifierExo(request.POST)
+		if formAjouterExo.is_valid():
+			nouvelexo = CoreExo(banque=banque)
+			nouvelexo.save()
+			request.session['makexo']=nouvelexo.id
+			core.genererSvg(nouvelexo,dossier)
+			return redirect('prof.views.makexo')
+		elif formModifierExo.is_valid():
+			request.session['makexo']=formModifierExo.cleaned_data['idexo']
+			return redirect('prof.views.makexo')
 	
-	listesvg = list()
+	listeexos = list()
 	for exo in banque.coreexo_set.all():
-		listesvg.append(exo)
+		formModifierExo = MakexoModifierExo()
+		formModifierExo.setId(exo.id)
+		listeexos.append({'id':exo.id,'form':formModifierExo})
+	nbexos = len(listeexos)
 
 	formAjouterExo = MakexoAjouterExo()
 	formModifierExo = MakexoModifierExo()
