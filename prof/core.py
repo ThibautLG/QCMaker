@@ -103,7 +103,7 @@ def genererSvg(exo,dossier):
     sp.call(['pdf2svg',dossier+'/exo-'+str(exo.id)+'.pdf',dossier+'/exo-'+str(exo.id)+'.svg'])
     os.remove(dossier+'/exo-'+str(exo.id)+'.aux')
     os.remove(dossier+'/exo-'+str(exo.id)+'.log')
-    #os.remove(dossier+'/exo-'+str(exo.id)+'.tex')
+    os.remove(dossier+'/exo-'+str(exo.id)+'.tex')
     os.remove(dossier+'/exo-'+str(exo.id)+'.pdf')
 
 def genererPdfs(qcm,dossier):
