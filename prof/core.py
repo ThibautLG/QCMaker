@@ -31,13 +31,14 @@ def exo2tex(exo,correction):
     TeXexo=list() #liste contenant le code TeX pour la liste aGen d'exos, aGen est une list() de numéros d'exos de cette instance de classe, dont on doit générer le 
     TeXexo.append(u"\\begin{exo}\n")
     TeXexo.append(exo.question+u"\n")
-    TeXexo.append(u"\n\\medskip\n\\begin{minipage}{ \\textwidth}\\begin{itemize}[label=$\\square$]\n")
-    for reponse in sorted(exo.corereponse_set.all(), key=lambda r: int(r.position)):
-	if reponse.nom == "v" and correction:
-		TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
-	else:
-		TeXexo.append(u"\item "+reponse.texte+u"\n")
-    TeXexo.append(u"\\end{itemize}\end{minipage}\n")
+    if exo.corereponse_set.all():
+    	TeXexo.append(u"\n\\medskip\n\\begin{minipage}{ \\textwidth}\\begin{itemize}[label=$\\square$]\n")
+    	for reponse in sorted(exo.corereponse_set.all(), key=lambda r: int(r.position)):
+		if reponse.nom == "v" and correction:
+			TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
+		else:
+			TeXexo.append(u"\item "+reponse.texte+u"\n")
+   	TeXexo.append(u"\\end{itemize}\end{minipage}\n")
     TeXexo.append(u"\\end{exo}\n\\bigskip\n")
     if correction:
 	TeXexo.append(u"\\begin{cor}\n{\\color{red}")
@@ -72,6 +73,19 @@ def genererTeXHTML(exo,template):
     return TeX
 
 
+def genererTeXQcmPreview(qcm,template):
+
+    with codecs.open(template, 'r', 'utf-8') as f:
+        TeX=f.readlines()
+    indexExos=TeX.index(sepTeXExos) 
+    TeX.insert(TeX.index(sepNom),qcm.nomTeX)
+    TeX.insert(TeX.index(sepTexte),qcm.texteTeX)
+    TeX.insert(TeX.index(sepCodeExo),u"17-168748 \\Huge + $ "+ntosymb('1010101',7)+u" $ \\normalsize")
+
+    return TeX
+
+
+
 def genererTeX(qcmpdf,template):
     
     with codecs.open(template, 'r', 'utf-8') as f:
@@ -96,18 +110,73 @@ def genererTeX(qcmpdf,template):
 def genererSvg(exo,dossier):
     
     template = "templateHTML.tex"
+
     with codecs.open(dossier+'/exo-'+str(exo.id)+'.tex','w','utf-8') as f:
 	for ligne in genererTeXHTML(exo,'templateHTML.tex'):
 	    f.write(ligne)
-    sp.call(['pdflatex','-output-directory',dossier,dossier+'/exo-'+str(exo.id)+'.tex'])
-    sp.call(['pdf2svg',dossier+'/exo-'+str(exo.id)+'.pdf',dossier+'/exo-'+str(exo.id)+'.svg'])
-    os.remove(dossier+'/exo-'+str(exo.id)+'.aux')
-    os.remove(dossier+'/exo-'+str(exo.id)+'.log')
-    os.remove(dossier+'/exo-'+str(exo.id)+'.tex')
-    os.remove(dossier+'/exo-'+str(exo.id)+'.pdf')
+    try:
+	 sp.check_output(['pdflatex','-output-directory',dossier,dossier+'/exo-'+str(exo.id)+'.tex'])
+	 sp.call(['pdftocairo','-svg','-l','1',dossier+'/exo-'+str(exo.id)+'.pdf',dossier+'/exo-'+str(exo.id)+'.svg'])
+   	 os.remove(dossier+'/exo-'+str(exo.id)+'.aux')
+ 	 os.remove(dossier+'/exo-'+str(exo.id)+'.log')
+   	 os.remove(dossier+'/exo-'+str(exo.id)+'.tex')
+   	 os.remove(dossier+'/exo-'+str(exo.id)+'.pdf')
+    except sp.CalledProcessError as er:
+	erreurtemp=er.output.split('\n')
+	erreur=""
+	for ligne in erreurtemp:
+		if ligne[:1] == "!":
+	    		erreur += ligne+"\n"
+		#if ligne[:2] == "l.":
+			#ligneerreur = int(ligne.split(' ',1)[0][2:])
+			#with codecs.open(dossier+'/exo-'+str(exo.id)+'.tex','r','utf-8') as f:
+			#	texerreurs = f.readlines()
+			#print('\n'.join(texerreurs[ligneerreur:ligneerreur+2]))
+			#break
+	print(erreur)
+	return erreur 
+    return 0
+	
+def genererSvgQcm(qcm,dossier):
 
-def genererPdfs(qcm,dossier):
+
+    with codecs.open(dossier+'/qcm-prev-'+str(qcm.id)+'.tex','w','utf-8') as f:
+	for ligne in genererTeXQcmPreview(qcm,'template.tex'):
+	    f.write(ligne)
+    try:
+	 sp.check_output(['pdflatex','-output-directory',dossier,dossier+'/qcm-prev-'+str(qcm.id)+'.tex'])
+	 sp.call(['pdftocairo','-svg','-l','1',dossier+'/qcm-prev-'+str(qcm.id)+'.pdf',dossier+'/qcm-prev-'+str(qcm.id)+'.svg'])
+   	 os.remove(dossier+'/qcm-prev-'+str(qcm.id)+'.aux')
+ 	 os.remove(dossier+'/qcm-prev-'+str(qcm.id)+'.log')
+   	 os.remove(dossier+'/qcm-prev-'+str(qcm.id)+'.tex')
+   	 os.remove(dossier+'/qcm-prev-'+str(qcm.id)+'.pdf')
+    except sp.CalledProcessError as er:
+	erreurtemp=er.output.split('\n')
+	erreur=""
+	for ligne in erreurtemp:
+		if ligne[:1] == "!":
+	    		erreur += ligne+"\n"
+	print(erreur)
+	return erreur 
+    return 0
+
+
+
+def genererPdfs(args):
     
+    qcm=args[0]
+    dossier=args[1]
+    try:
+	os.mkdir(dossier)
+    except:
+	print('Impossible de créer le dossier '+dossier)
+    try:
+	os.mkdir(dossier+'/originaux')
+	os.mkdir(dossier+'/copies')
+    except:
+	print('Impossible de créer les dossiers '+dossier+'/...')
+	pass
+    print(os.getcwd())
     template="template.tex"
     pdfuniteArg=list()
     pdfuniteArg.append('pdfunite')
@@ -118,7 +187,7 @@ def genererPdfs(qcm,dossier):
         for qcmpdf in sorted(qcm.coreqcmpdf_set.filter(paquet=paquet), key=lambda r: int(r.id)):
             i+=1
             with codecs.open(dossier+'/originaux/exos'+str(i)+".tex",'w','utf-8') as f:
-                for ligne in genererTeX(qcmpdf,dossier+'/'+template):
+                for ligne in genererTeX(qcmpdf,template):
                     f.write(ligne)
             print('ok')
             sp.check_output(['pdflatex','-output-directory',dossier+'/originaux',dossier+'/originaux/exos'+str(i)+".tex"])
@@ -139,18 +208,21 @@ def genererPdfs(qcm,dossier):
         pdfuniteArg=list()
         pdfuniteArg.append('pdfunite')
         paquet+=1
+    qcm.generation=2
+    qcm.save()
 
 def randomSample(taillesample,taillebanque,ntotal):
 	
 	random.seed()
 	ret = list()
 	for i in range(ntotal):
-		ret.append(random.sample(taillebanque,taillesample))
+		ret.append(random.sample(range(taillebanque),taillesample))
 
 	return ret
 
-def genererQcm(qcm,nbpdfstexte):
-    
+def genererQcm(args):
+    qcm=args[0]
+    nbpdfstexte=args[1]
     nbpdfstexte=nbpdfstexte.split(',')
     nbpdfs=list()
     ntotal=0

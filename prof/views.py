@@ -268,15 +268,19 @@ def telecharger(request,objet):
 	return response
    
 
-def svg(request,id_svg):
+def svg(request,id_svg, prefix):
 	
+	print(id_svg,prefix)
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
-	nom=str(request.user.username)
-	
+	nom = str(request.user.username)
+	if prefix == '1':
+		prefix = "exo"
+	elif prefix == '2':
+		prefix = "qcm-prev"
 	try:
 		pr = Enseignant.objects.get(nom=nom)
-		svg = "media/ups/"+str(pr.id)+"/exo-"+str(id_svg)+".svg"
+		svg = "media/ups/"+str(pr.id)+"/"+prefix+"-"+str(id_svg)+".svg"
 		return telecharger(request,svg)
 	except Exception, er:
 		print("Erreur : ",er)
@@ -372,7 +376,7 @@ def home(request):
 	pr,nouveauprof=Enseignant.objects.get_or_create(nom=nom)
 
 	formNouvelleBanque = AjouterBanque(request.POST)
-	formBanque = BanqueToMakexo(request.POST)
+	formBanque = ChoixBanque(request.POST)
 	listebanquestemp=pr.corebanque_set.all()
 	listebanques=list()
 	for banq in listebanquestemp:
@@ -392,14 +396,14 @@ def home(request):
 			return redirect('prof.views.banque')
 
 	formNQCM = NouveauQCM()
-	formBanque = BanqueToMakexo()
+	formBanque = ChoixBanque()
 	formChoix = QCMChoix()
 	formNouvelleBanque = AjouterBanque()
 
-	listeqcms = sorted(pr.qcm_set.all(), key=lambda r: int(r.id),reverse=True)
+	listeqcms = sorted(pr.coreqcm_set.all(), key=lambda r: int(r.id),reverse=True)
 	listeChoix = list()
-	for qcm in listeqcms:
-		listeChoix.append((qcm.id,qcm.nom))
+	for lqcm in listeqcms:
+		listeChoix.append((lqcm.id,lqcm.nom))
 	formChoix.setListe(listeChoix)
 
 	listebanquestemp=pr.corebanque_set.all()
@@ -419,12 +423,16 @@ def qcmaker(request):
 	if not is_prof(nom):
 		return redirect('prof.views.ehome')
 		
-	pr=Enseignant.objects.get(nom=nom)
 
-	#on teste tous les formulaires
+	
+	pr=Enseignant.objects.get(nom=nom)
+	dossier = 'media/ups/'+str(pr.id)
+
+	#on charge tous les formulaires
 	formGenerer = Generer(request.POST)
 	formNQCM = NouveauQCM(request.POST) 
-	formNTemplate = AjoutTemplate(request.POST)
+	formNEntete = Entete(request.POST)
+
 	#on remplit la liste des QCMs (pour tester le formulaire de choix de QCM)
 	listeqcms=pr.qcm_set.all()
 	listeChoix=list()
@@ -434,102 +442,112 @@ def qcmaker(request):
 	formChoix.setListe(listeChoix)
 	formTelecharger = Telecharger(request.POST)
 	formEffacer = Effacer(request.POST)
-	formNExos = NouveauxExos(request.POST,request.FILES)
 	
-	#on remplit la liste des exos pour tester le formuler d'ajout d'exo (formExoChoix)
-	listexostemp=pr.exo_set.all()
-	listexos=list()
-	for ex in listexostemp:
-		listexos.append((ex.nom,ex.nom))
-	formExoChoix = ExoChoix(request.POST)
-	formExoChoix.setListe(listexos)		
-	formDel=EffacerExo(request.POST)
-	
+	#on remplit la liste des banques d'exos
+	formAjoutBanque = ChoixBanqueQCM(request.POST)
+	listebanquestemp=pr.corebanque_set.all()
+	listebanques=list()
+	for banq in listebanquestemp:
+		listebanques.append((banq.id,banq.nom))
+	formAjoutBanque.setListe(listebanques)
+
+	formDel=EffacerBanque(request.POST)
+	print(request.session)	
 	if request.method == 'POST':  # S'il s'agit d'une requête POST
 	
 		#si nouveau QCM
 		if formNQCM.is_valid():
-			qcm,creation=Qcm.objects.get_or_create(prof=pr,nom=formNQCM.cleaned_data["titre"])
-			qcm.template = File(open("template.tex", 'r'))
+			qcm,creation=CoreQcm.objects.get_or_create(prof=pr,nom=formNQCM.cleaned_data["titre"])
 			if creation:
 				qcm.save()
 			request.session['qcm']=qcm.id
+			errtex = core.genererSvgQcm(qcm,dossier)
+			if not errtex == 0:
+				qcm.erreurtex = True
+			else: 
+				qcm.erreurtex = False
+			qcm.save()
 		
 		#si QCM existant
 		elif formChoix.is_valid():
 			try:
-				qcm=Qcm.objects.get(prof=pr,id=int(formChoix.cleaned_data['qcm']))
+				qcm=CoreQcm.objects.get(prof=pr,id=int(formChoix.cleaned_data['qcm']))
 				request.session['qcm']=qcm.id
 			except Exception, er:
 				print("Erreur : ",er)
 				return redirect('prof.views.home')	
 
-		#si nouvel exo.exos	
-		elif formNExos.is_valid():
-			e,creation=Exo.objects.get_or_create(prof=pr,nom=str(formNExos.cleaned_data["exos"]))
-			if creation:
-       				e.fichier = formNExos.cleaned_data["exos"]
-				e.save()
-				
-		#si suppression de QCM
+		#si suppression de banque d'exo du qcm
 		elif formDel.is_valid():
-			td=NbExos.objects.get(id=formDel.cleaned_data['exo'])
+			print('On efface un nbexos')
+			td=CoreNbExos.objects.get(id=formDel.cleaned_data['banqueaeff'])
 			td.delete()
 			
-		#si ajout d'exo
-		elif formExoChoix.is_valid():
-			qcm=Qcm.objects.get(id=request.session['qcm'])
-			exo=Exo.objects.get(prof=pr,nom=formExoChoix.cleaned_data["exo"])
-			nbexos=formExoChoix.cleaned_data['nbexos']
-			n=NbExos(qcm=qcm,exo=exo,nbexos=nbexos)
+		#si ajout de banque
+		elif formAjoutBanque.is_valid():
+			qcm=CoreQcm.objects.get(id=request.session['qcm'])
+			nbanque=CoreBanque.objects.get(prof=pr,id=formAjoutBanque.cleaned_data['banque'])
+			nbexos=formAjoutBanque.cleaned_data['nbexos']
+			n=CoreNbExos(qcm=qcm,banque=nbanque,nb=nbexos,position=len(qcm.nbexos.all())+1)
 			n.save()
 		
-		#si ajout de template
-		elif formNTemplate.is_valid():
-			qcm=Qcm.objects.get(id=request.session['qcm'])
-			qcm.nomTeX = formNTemplate.cleaned_data["nomTeX"]
-			qcm.texteTeX = formNTemplate.cleaned_data["texteTeX"]
+		#si changement d'entete
+		elif formNEntete.is_valid():
+			qcm=CoreQcm.objects.get(id=request.session['qcm'])
+			qcm.nomTeX = formNEntete.cleaned_data["nomTeX"]
+			qcm.texteTeX = formNEntete.cleaned_data["texteTeX"]
+			qcm.save()
+			errtex = core.genererSvgQcm(qcm,dossier)
+			if not errtex == 0:
+				qcm.erreurtex = True
+			else: 
+				qcm.erreurtex = False
 			qcm.save()
 		
 		#si génération des qcms
 		elif formGenerer.is_valid():
-			qcm=Qcm.objects.get(id=request.session['qcm'])
+			qcm=CoreQcm.objects.get(id=request.session['qcm'])
 			#si aucun générateur n'est en cours
-			if qcm.nbpdfs == '':
-				qcm.nbpdfs=formGenerer.cleaned_data['nbpdfs']
-				qcm.save()
+			if not qcm.erreurtex and qcm.generation == 0:
 				print('ok, on lance le générateur')
+				qcm.generation=1
+				qcm.save()
 				try:
-					BgJob(generateur,qcm)
+					BgJob(core.genererQcm,(qcm,formGenerer.cleaned_data['nbpdfs']))
+					BgJob(core.genererPdfs,(qcm,dossier+'/'+str(qcm.id)))
 					return redirect('prof.views.qcmanage')
 				except Exception, er:
 					qcm.delete()
 					print("Erreur generateur: ",er, Exception)
 					return redirect('prof.views.home')
+			elif qcm.generation>0:
+				return redirect('prof.views.qcmanage')
+				
 				
 	try:
-		qcm=Qcm.objects.get(id=request.session['qcm'])
+		qcm=CoreQcm.objects.get(id=request.session['qcm'])
 	except Exception,er:
-		print('Erreur chargement du QCM: '+str(er))
+		print('Erreur chargement du QCM'+str(request.session['qcm'])+': '+str(er))
 		return redirect('prof.views.home')
-	if qcm.gen or not qcm.nmax==0:
+	if qcm.generation>0:
 		return redirect('prof.views.qcmanage')
-	#on remplit la liste des exos
-	listexostemp=pr.exo_set.all()
-	listexos=list()
-	for ex in listexostemp:
-		listexos.append((ex.nom,ex.nom))
-	formExoChoix = ExoChoix()
-	formExoChoix.setListe(listexos)
-	#on remplit la liste des exos qcm		
-	listexosqcmtemp=sorted(NbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
-	listexosqcm=list()
-	for nb in listexosqcmtemp:
-		tform=EffacerExo(initial={'exo':nb.id})
-		listexosqcm.append({'nom':nb.exo.nom,'nb':nb.nbexos,'formDel':tform})
-	formNTemplate = AjoutTemplate()
-	formNTemplate.setFields(qcm)
-	formNExos = NouveauxExos()
+
+	#on remplit la liste des banques d'exos
+	formAjoutBanque = ChoixBanqueQCM()
+	listebanquestemp=pr.corebanque_set.all()
+	listebanques=list()
+	for banq in listebanquestemp:
+		listebanques.append((banq.id,banq.nom))
+	formAjoutBanque.setListe(listebanques)
+
+	#on remplit la liste des banques du qcm		
+	listebanquesqcmtemp = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
+	listebanquesqcm=list()
+	for nb in listebanquesqcmtemp:
+		tform=EffacerBanque(initial={'banqueaeff':nb.id})
+		listebanquesqcm.append({'nom':nb.banque.nom,'nb':nb.nb,'formDel':tform})
+	formNEntete = Entete()
+	formNEntete.setFields(qcm)
 	try:
 		formGenerer.erreurici
 	except Exception,er:
@@ -547,10 +565,11 @@ def qcmanage(request):
 	
 	try:
 		pr=Enseignant.objects.get(nom=nom)
-		qcm=Qcm.objects.get(id=request.session['qcm'])
+		qcm=CoreQcm.objects.get(id=request.session['qcm'])
 	except Exception,er:
 		return redirect('prof.views.home')
-
+	
+	dossier = 'media/ups/'+str(pr.id)
 	mi_id=-1
 	
 	if request.method == 'POST':
@@ -592,20 +611,20 @@ def qcmanage(request):
 			print('rien')
 			
 			
-	
-	#on remplit la liste des exos qcm		
-	listexosqcmtemp=sorted(NbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
-	listexosqcm=list()
-	for nb in listexosqcmtemp:
-		tform=EffacerExo(initial={'exo':nb.id})
-		listexosqcm.append({'nom':nb.exo.nom,'nb':nb.nbexos,'formDel':tform})
+
+
 
 	#on remplit la liste des pdf du qcm
-	listpdfqcmtemp=QcmPdf.objects.filter(qcm=qcm)
-	listpdfqcm=list()
-	for pdf in listpdfqcmtemp:
-		pdform = Telecharger(initial={'fichieratel':pdf.fichier})
-		listpdfqcm.append({'nom':pdf.nom,'formTel':pdform})
+	try:
+		listepdfqcmtemp = [x for x in os.listdir(dossier+'/'+str(qcm.id)+'/originaux') if x.startswith('exos-') and x.endswith('.pdf')]
+	except:
+		listepdfqcmtemp = list()
+	print(listepdfqcmtemp)
+	listepdfqcm=list()
+	for pdf in listepdfqcmtemp:
+		print(pdf)
+		pdform = Telecharger(initial={'fichieratel':pdf})
+		listepdfqcm.append({'nom':pdf,'formTel':pdform})
 		
 	
 	#creation de la liste des copies corrigées
@@ -639,7 +658,7 @@ def qcmanage(request):
 		listecopies.append({'nom':cp.nom,'corrigee':cp.corrigees})
 
 	#le worker marche encore, création des pdfs
-	encours=not qcm.gen
+	encours= qcm.generation<2
 	#le worker marche encore, import des pdfs
 	importpdfini = len(QcmPdf.objects.filter(qcm=qcm)) == len(QcmPdf.objects.filter(qcm=qcm,traite=True))
 	formGenNotes = TelechargerNotes()
@@ -682,12 +701,22 @@ def makexo(request):
 			coreexo.corrige = formMain.cleaned_data['corrige']
 			coreexo.type = formMain.cleaned_data['type']
 			coreexo.save()
-			core.genererSvg(coreexo,dossier)
+			errtex = core.genererSvg(coreexo,dossier)
+			if not errtex == 0:
+				coreexo.erreurtex = True
+			else: 
+				coreexo.erreurtex = False
+			coreexo.save()
 		elif formAjouterReponse.is_valid():
 			reponse = CoreReponse(exo=coreexo,texte=formAjouterReponse.cleaned_data['reponse'],nom=formAjouterReponse.cleaned_data['nom'],position=len(coreexo.corereponse_set.all())+1)
 			reponse.save()
-			core.genererSvg(coreexo,dossier)
-			
+			errtex = core.genererSvg(coreexo,dossier)
+			if not errtex == 0:
+				coreexo.erreurtex = True
+			else: 
+				coreexo.erreurtex = False
+
+			coreexo.save()
 	
 
 	listereponses = list()
@@ -736,7 +765,7 @@ def banque(request):
 	for exo in banque.coreexo_set.all():
 		formModifierExo = MakexoModifierExo()
 		formModifierExo.setId(exo.id)
-		listeexos.append({'id':exo.id,'form':formModifierExo})
+		listeexos.append({'id':exo.id,'form':formModifierExo,'err':exo.erreurtex})
 	nbexos = len(listeexos)
 
 	formAjouterExo = MakexoAjouterExo()

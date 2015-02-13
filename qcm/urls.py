@@ -16,7 +16,7 @@ urlpatterns = patterns('',
     url(r'^makexo','prof.views.makexo'),
     url(r'^banque','prof.views.banque'),
     url(r'^image/(?P<id_cc>\d+)','prof.views.image'),
-    url(r'^svg/(?P<id_svg>\d+)','prof.views.svg'),
+    url(r'^svg/(?P<id_svg>\d+)/(?P<prefix>\d+)/','prof.views.svg'),
     url(r'^login', 'django_cas.views.login'), 
     url(r'^logout', 'django_cas.views.logout'), 
 )

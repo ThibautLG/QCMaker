@@ -55,15 +55,10 @@ Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} cor
 {% endfor %}
 </table>
 {% endif %}
-<h2>Composition du QCM</h2><br>
 
-{% for exo in listexosqcm %}
-   <span style="text-decoration: underline;"> {{ exo.nom }} </span> ({{ exo.nb }} exercice{{ exo.nb|pluralize }})
-<br>
-{% endfor %} 
 
 <h2>Liste des PDFs:</h2>
-{% for pdf in listpdfqcm %}
+{% for pdf in listepdfqcm %}
 <form action="{% url 'prof.views.qcmanage' %}" method="post">
     {% csrf_token %}
 	{{ pdf.formTel }}

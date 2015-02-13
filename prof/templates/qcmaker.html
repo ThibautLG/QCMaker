@@ -1,44 +1,47 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>QCM {{ qcm.nom }}<br></h2> 
-
-{% if listexosqcm %}
+{% if listebanquesqcm %}
+<br>
 <form action="{% url 'prof.views.qcmaker' %}" method="post">
     {% csrf_token %}
 	{{ formGenerer }}<input type="submit" value="Générer pdfs" />
 </form>
-{% endif %}
-<form action="{% url 'prof.views.qcmaker' %}" method="post">
-	<table><tr><td>
-    {% csrf_token %}
-	{{ formNTemplate.as_p }} {{ form.error }}</td><td><input type="submit" value="Enregistrer" /></td></tr></table>
-</form>
-{% if qcm.template %}
+	<hr width="75%" align="center">
+
 <h2>Composition du QCM<br></h2>
 <table>
-{% for exo in listexosqcm %}
+{% for banq in listebanquesqcm %}
 <tr><td>
-    {{ exo.nb }} exercice{{ exo.nb|pluralize }} de {{ exo.nom }}</td><td></td><td><form action="{% url 'prof.views.qcmaker' %}" method="post">
+    {{ banq.nb }} exercice{{ banq.nb|pluralize }} de {{ banq.nom }}</td><td></td><td><form action="{% url 'prof.views.qcmaker' %}" method="post">
     {% csrf_token %}
-	{{ exo.formDel }}<input type="submit" value="X" />
+	{{ banq.formDel }}<input type="submit" value="X" />
 </form></td></tr>
 {% endfor %}
 </table>
 <br>
 
-<h2>Exercices disponibles<br></h2>
-{% if listexos %}
+<hr width="75%" align="center">
+{% endif %}<br>
+<h2>Banques d'exercices disponibles<br></h2>
+<div>
+{% if listebanques %}
 <form action="{% url 'prof.views.qcmaker' %}" method="post">
     {% csrf_token %}
-	{{ formExoChoix }}<input type="submit" value="Ajouter" />
+	{{ formAjoutBanque }}<input type="submit" value="Ajouter" />
 </form>
 {% endif %}
-<form action="{% url 'prof.views.qcmaker' %}" method="post" enctype="multipart/form-data">
+</div>
+	<hr width="75%" align="center">
+<h2>Entete</h2>
+<div style="text-align: center;">
+<form action="{% url 'prof.views.qcmaker' %}" method="post">
     {% csrf_token %}
-    {{ formNExos }} <input type="submit" value="Ajouter" />
-</form>
+	{{ formNEntete.nomTeX }}<br> {{ formNEntete.error }}<br> {{ formNEntete.texteTeX }}<br> <input type="submit" value="Enregistrer" /></form>
 
-{% endif %}
-
+</div>
+	<br>
+<hr width="75%" align="center"><br>
+<h2>Aperçu de l'entete<br></h2>
+<img src="{% url 'prof.views.svg' qcm.id '2' %}"  {% if errtex %}style="width:100%;border-color:#FF0000" border=2px{% else %} style="width:100%" {% endif %}>
 {% endblock %}

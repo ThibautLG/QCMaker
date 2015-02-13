@@ -8,7 +8,10 @@ import shutil,os
 # Modeles pour le core.py
 class Enseignant(models.Model):
 	nom=models.CharField(max_length=200)
-
+    
+class Eleve(models.Model):
+	nom=models.CharField(max_length=200)
+	
 class CoreBanque(models.Model):
 	nom = models.CharField(max_length=200)
 	prof = models.ForeignKey(Enseignant)
@@ -19,6 +22,9 @@ class CoreQcm(models.Model):
 	nomTeX = models.CharField(max_length=200,default="Matière - 2014/2015")
 	texteTeX = models.CharField(max_length=2000,default="\\centerline{Durée 30 minutes}\n\\medskip \n{\\it \n\\noindent\\underline{La correction est automatisée, {\\bf noircir}  les cases des réponses justes et laisser vides les autres cases.} \\\ \nAucun document autorisé, téléphones portables et calculatrices interdits.\\\ \nUn seule réponse juste par exercice. \\\ \nBarème: réponse juste = 1pt, réponse fausse  = -0.5pt \n}")
 	nbexos = models.ManyToManyField(CoreBanque, through='CoreNbExos')
+	erreurtex =  models.BooleanField(default=True)
+	generation = models.IntegerField(default=0)
+
 
 class CoreNbExos(models.Model):
 	nb = models.IntegerField()
@@ -27,12 +33,11 @@ class CoreNbExos(models.Model):
 	position = models.IntegerField()
 	
 class CoreExo(models.Model):
-	nom = models.CharField(max_length=200)
 	question = models.CharField(max_length=2000, default="En quoi l'escalade est un super sport?")
 	corrige = models.CharField(max_length=2000, default="Parce qu'il n'y a pas mieux!\n\\[\n\\int_0^\\infty e^{-x}dx = 1 \n\\]" )
-	formule = models.CharField(max_length=200)
 	type = models.CharField(max_length=200)
 	banque = models.ForeignKey(CoreBanque)
+	erreurtex = models.BooleanField(default=True)
 	
 class CoreReponse(models.Model):
 	exo = models.ForeignKey(CoreExo)
@@ -108,10 +113,7 @@ class NbExos(models.Model):
 	nbexos = models.IntegerField()
 	qcm = models.ForeignKey(Qcm)
 	exo = models.ForeignKey(Exo)
-    
-class Eleve(models.Model):
-	nom=models.CharField(max_length=200)
-	
+
 class Copies(models.Model):
 	def renommage(instance, nom):
 		return("ups/"+str(instance.qcm.prof.id)+"/"+str(instance.qcm.id)+"/copies/"+nom)

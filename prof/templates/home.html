@@ -13,16 +13,19 @@
     {% csrf_token %}
     {{ formNQCM}} <input type="submit" class="btn" value="Créer" />
 </form>
-<br><center>---</center><br>
+
+<hr width="75%" align="center">
 
 <center><h2>Banques d'exercices</h2><br></center>
+{% if listebanques %}
 <form action="{% url 'prof.views.home' %}" method="post">
     {% csrf_token %}
-    {{ formBanque }} <input type="submit" class="btn" value="Accéder" />
+    {{ formBanque }} <input type="submit" class="btn" value="Modifier" />
 </form>
+{% endif %}
 <form action="{% url 'prof.views.home' %}" method="post">
     {% csrf_token %}
-    {{ formNouvelleBanque }} <input type="submit" class="btn" value="Ajouter" />
+    {{ formNouvelleBanque }} <input type="submit" class="btn" value="Créer" />
 </form>
 
 {% endblock %}

@@ -36,5 +36,10 @@
 	{% endif %}
 	<br>
 	<h2>Prévisualisation</h2>
-	<img src="{% url 'prof.views.svg' exosvg %}" style="width:100%">
+	{% if errtex %}
+	<pre>
+{{ errtex }}
+	</pre>
+	{% endif %}
+	<img src="{% url 'prof.views.svg' exosvg '1' %}"  {% if errtex %}style="width:100%;border-color:#FF0000" border=2px{% else %} style="width:100%" {% endif %}>
 {% endblock %}
