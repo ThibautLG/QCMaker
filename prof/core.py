@@ -16,6 +16,7 @@ import time
 import sys
 import shutil as sh
 import numpy as np
+import cv2
 from prof.models import *
 import codecs
 
@@ -25,6 +26,16 @@ sepTeXExos = "%%%exos\n"
 sepCodeExo = "%%%codeExo\n"
 sepNom = "%%%nomQCM\n"
 sepTexte = "%%%texteQCM\n"
+
+caseVide="case_vide.jpg"
+sep=cv2.imread("sep.jpg",0)
+pts=[cv2.imread("pt1.jpg",0),cv2.imread("pt2.jpg",0),cv2.imread("pt3.jpg",0),]
+zones=[[(1000,1700),(0,400)],[(1300,1700),(2100,2400)],[(0,400),(2100,2300)]]
+thresholdCaseCode=0.75
+thresholdCase=0.5 #0.75
+dl=600
+		
+
 
 def exo2tex(exo,correction):
 
@@ -164,8 +175,11 @@ def genererSvgQcm(qcm,dossier):
 
 def genererPdfs(args):
     
-    qcm=args[0]
+    idqcm=args[0]
     dossier=args[1]
+    qcm=CoreQcm.objects.get(id=idqcm)
+    print('gPDF nmax:'+str(qcm.nmax))
+            
     try:
 	os.mkdir(dossier)
     except:
@@ -201,7 +215,6 @@ def genererPdfs(args):
             sp.call(pdfuniteArg)
         else:
             sh.copy(dossier+'/originaux/exos'+str(i)+'.pdf',dossier+"/originaux/exos-"+str(paquet)+'.pdf')
-        print(asupprimer)
         for fichier in asupprimer:
             os.remove(fichier)
 
@@ -231,6 +244,8 @@ def genererQcm(args):
         ntotal+=int(nb)
 
     nmax=int(np.trunc(np.log2(ntotal))+1)
+    qcm.nmax=nmax
+    qcm.save()
     codes=range(100000)
     random.seed(float('0.'+str(qcm.id)))
     random.shuffle(codes)
@@ -239,20 +254,20 @@ def genererQcm(args):
 
     paquet=0
     numero=1
-
+    print("gQCM 1")
     listebanques = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.position))
     rand = list()
     for nbexos in listebanques:
 	rand.append(randomSample(nbexos.nb,len(nbexos.banque.coreexo_set.all()),ntotal))
 
-
+    print("gQCM 2")
     for nb in nbpdfs:
         paquet+=1
 	for i in range(nb):
 	    position=1
 	    qcmpdf=CoreQcmPdf(numero=numero,code=str(qcm.id)+"-"+str(codes[numero]),qcm=qcm,paquet=paquet)
             qcmpdf.save()
-
+	    print('gQCM 3:'+str(i))
 	    numerobanque = 0
             for nbexos in listebanques:
                 listeexos = nbexos.banque.coreexo_set.all()
@@ -265,4 +280,277 @@ def genererQcm(args):
 
 		numerobanque += 1
             numero+=1
-            
+    print('gQCM nmax:'+str(qcm.nmax)+' ou '+str(nmax))
+
+##### correction
+
+class Copie():
+	
+	def __init__(self):
+		pass
+	
+	#méthode pour lire les chiffres du code (la suite de 0101 en haut à droite)
+	def lireChiffres(self):
+		
+		nmax=self.nmax
+		print('nmax dans lireChiffres:'+str(nmax))
+		tcode=list()
+		w,h=self.imgCode.shape[::-1]
+		tt=list()
+		code=list()
+		for i in range(nmax):
+			itcode=self.imgCode[:,np.round(i*w/nmax):np.round((i+1)*w/nmax)]
+			tloc=np.where(itcode>200)
+			tloc=zip(*tloc[::-1])
+			tt.append(len(tloc))
+		t0=sorted(tt,reverse=True)[0]	
+		for i in range(nmax):
+			if tt[i]>=t0*thresholdCaseCode:
+				code.append('0')
+			else:
+				code.append('1')
+		code="".join(code)
+		self.code=code
+		self.numero = int(code,2)
+		print(self.code)
+		
+	#méthode pour trouver les trois repères de la copie, qui serviront à mettre l'élève et l'original à la même échelle
+	def trouverpt(self,i):
+		method = 'cv2.TM_CCOEFF_NORMED'	
+		method = eval(method)
+		res = cv2.matchTemplate(self.img[zones[i][1][0]:zones[i][1][1],zones[i][0][0]:zones[i][0][1]],pts[i],method)
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+		loc = np.where( res >= max_val)
+		loc = zip(*loc[::-1])
+		ret=(loc[0][0]+zones[i][0][0],loc[0][1]+zones[i][1][0])
+		return ret
+		
+	#recherche le séparateur entre le code en 01010 et celui d'avant. Utilisé pour trouver l'image du code
+	def trouverSep(self):
+		
+		method = 'cv2.TM_SQDIFF_NORMED'
+		method = eval(method)
+		
+		template = sep
+		w, h = template.shape[::-1]
+		
+		res = cv2.matchTemplate(self.img,template,method)
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+		loc = np.where( res <= min_val)
+		loc = zip(*loc[::-1])
+		return loc[0]
+	
+	#enregistre l'image du code
+	def lireN(self):
+		locCode=self.trouverSep()
+		w, h = sep.shape[::-1]
+		self.imgCode=self.img[locCode[1]:locCode[1]+h,locCode[0]+w:self.pts[0][0]]
+
+		
+	
+#classe pour les versions originales
+class Original(Copie):
+	
+	def __init__(self,imgFichier,nmax):
+
+		self.nmax = nmax
+		self.lire(imgFichier,caseVide)
+		self.pts=[self.trouverpt(0),self.trouverpt(1),self.trouverpt(2)]
+		print(self.pts)
+		self.lireN()
+		print("ok lireN")
+		self.lireChiffres()
+		print("ok lireChiffres")
+		del self.img
+		del self.template
+		del self.imgCode
+		del self.res
+		
+	#l'essentiel est fait ici: on charge, on trouve les cases vides pour qu'on sache où les trouver sur la copie de l'élève
+	def lire(self,imgFichier,templateFichier):
+		
+		#on charge et on tronque
+		self.img = cv2.imread(imgFichier,0)
+		self.template = cv2.imread(templateFichier,0)
+		self.dimCV = self.template.shape[::-1]
+		w,h = self.dimCV
+		
+		thresholdCoeff = 800
+		method = 'cv2.TM_SQDIFF_NORMED'		
+		method = eval(method)
+		self.res = cv2.matchTemplate(self.img[:,:dl],self.template,method)
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(self.res)
+		threshold = thresholdCoeff*min_val
+		loc = np.where( self.res <= threshold)
+		loc = zip(*loc[::-1])
+		n=len(loc)
+		
+		
+		#trop de cases pour être des cases
+		if n>100:
+			self.cases=list()
+			return
+		self.cases=loc
+
+
+class Eleve(Copie):
+	
+	def __init__(self,imgFichier):
+		#on charge et on tronque PAS
+		self.imgFichier=imgFichier
+		self.img = cv2.imread(imgFichier,0)
+		self.imgRGB = cv2.imread(imgFichier,1)
+		ret,self.img = cv2.threshold(self.img,200,255,cv2.THRESH_BINARY)
+		self.pts=[self.trouverpt(0),self.trouverpt(1),self.trouverpt(2)]
+		self.lireN()
+		self.lireChiffres()
+		
+		
+	#on compare la copie à l'original (on met la copie de l'élève à l'échelle de l'original, on lit les cases, et on décide si elles sont cochées ou non
+	def compare(self,original):
+		
+		w, h = original.dimCV
+		M=cv2.getAffineTransform(np.array(self.pts,dtype="float32"),np.array(original.pts,dtype="float32"))
+		rows,cols = self.img.shape
+		self.img = cv2.warpAffine(self.img,M,(cols,rows))
+		self.imgRGB = cv2.warpAffine(self.imgRGB,M,(cols,rows))
+		
+		self.reponses=list()
+		tt=list()
+		for pt in original.cases:
+			timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
+			tloc=np.where(timg>200)
+			tloc=zip(*tloc[::-1])
+			tt.append(len(tloc))
+			
+		tt.sort(reverse=True)
+		for pt in original.cases:
+			timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
+			tloc=np.where(timg>200)
+			tloc=zip(*tloc[::-1])
+			tn=len(tloc)
+			if tn>=tt[0]*thresholdCase:
+				self.reponses.append('0')
+			else:
+				self.reponses.append('1')
+				timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
+				cv2.rectangle(self.imgRGB, (pt[0]-w/2,pt[1]-h/2), (pt[0] + 3*w/2, pt[1] + 3*h/2), (0,0,255), 2)
+		
+		#cv2.imwrite(self.conf.dossier+"/copie-"+self.code+"-"+str(random.random())+".jpg",self.imgRGB)
+		cv2.imwrite(self.imgFichier,self.imgRGB)
+		
+		del self.imgRGB
+		del self.img
+		del self.imgCode
+	
+
+def importOriginal(qcm,fichier,dossier):
+	sp.check_call(["convert", "-density", '200', fichier, dossier+"/original.jpg"])
+	listeoriginaux=sorted([x for x in os.listdir(dossier) if x.endswith('.jpg')], key=lambda r: int(''.join(x for x in r if x.isdigit())))
+	print('importOriginal,listeoriginaux:'+str(','.join(listeoriginaux)))
+	for i in range(len(listeoriginaux)):
+		print('importOriginal:'+str(i))
+		ori=Original(dossier+"/"+listeoriginaux[i],qcm.nmax)
+		qcmpdf = CoreQcmPdf.objects.get(qcm=qcm,numero=ori.numero)
+		qcmpdf.pages += 1
+		print(ori.cases)
+		for case in ori.cases:
+			print(case)
+			qcmpdf.positionscases += str(qcmpdf.pages)+','+str(case[0])+','+str(case[1])+';'
+		qcmpdf.save()
+		os.remove(dossier+"/"+listeoriginaux[i])
+	
+
+def importOriginaux(idqcm):
+	qcm=CoreQcm.objects.get(id=idqcm)
+	dossier='media/ups/'+str(qcm.prof.id)+'/'+str(qcm.id)+'/'
+	nmax=qcm.nmax
+	print('importOriginaux nmax:'+str(nmax))
+	print('importOriginaux qcm:'+str(qcm))
+	for fichier in [x for x in os.listdir(dossier+"originaux") if x.endswith('.pdf')]:
+		importOriginal(qcm,dossier+'originaux/'+fichier,dossier+'originaux')
+	qcm.generation = 3
+	qcm.save()
+
+
+def correctionCopies(args):
+	cps = args[0]
+	dossier = args[1]
+	try:
+		os.mkdir(dossier+"/copies/"+str(cps.id))
+		sp.check_call(["convert", "-size", "1653x2338", cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
+		print('On y est!')
+		listepickle=[x for x in os.listdir(dossier+"/originaux") if x.endswith('.pickle')]
+		originaux=list()
+		for p in listepickle:
+			with open(dossier+"/originaux/"+p) as f:
+				originaux += pickle.load(f)
+
+		conf=qcmi.ConfigurationImport(dossier+"/")
+		conf.nmax=cps.qcm.nmax
+		listecopies=sorted([x for x in os.listdir(dossier+"/copies/"+str(cps.id)) if x.endswith('.jpg')], key=lambda r: int(''.join(x for x in r if x.isdigit())))
+		copies=list()
+		copies.append([qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[0],conf)])
+		for i in range(len(listecopies)-1):	
+			cop=qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[i+1],conf)
+		 ### les copies doivent être scannées dans l'ordre
+			if cop.code == copies[-1][0].code:
+				copies[-1].append(cop)
+			else:
+				copies.append([cop])
+
+		listeCodes=[o[0].code for o in originaux]
+		eleveinconnu,creation=Eleve.objects.get_or_create(nom="Élève non associé")
+		copiesasupprimer=list()
+		for copie in copies:
+
+			if not CopieCorrigee.objects.filter(numero=int(copie[0].code,2),qcm=cps.qcm):
+
+				cc=CopieCorrigee(copies=cps,numero=int(copie[0].code,2),eleve=eleveinconnu,qcm=cps.qcm)
+				cc.save()
+
+				try:
+					for i in range(len(copie)):
+						copie[i].compare(originaux[listeCodes.index(copie[i].code)][i])
+						ccjpg=CopieJPG(copiecorrigee=cc,fichier=copie[i].imgFichier)
+						ccjpg.save()
+
+				except Exception,er:
+					print('Erreur de correction: ',er)
+					cc.delete()
+					copiesasupprimer.append(copie)
+			else:
+				copiesasupprimer.append(copie)
+
+		for copie in copiesasupprimer:
+			copies.remove(copie)
+
+		listeRep=list()
+		for i in range(len(copies)):
+			listeRep.append([copies[i][0].code,"".join(copies[i][0].reponses)])
+			for j in range(len(copies[i])-1):
+				listeRep[-1][1]+="".join(copies[i][j+1].reponses)
+		fichierCSV=io.FileIO(dossier+"/copies/corr-"+str(cps.id)+".csv",'w')
+		for rep in listeRep:
+			fichierCSV.write(","+str(int(rep[0],2))+","+rep[1])
+			fichierCSV.write("\n")
+	       	fichierCSV.close()
+
+		reponsesElevesCSV=dossier+"/copies/corr-"+str(cps.id)+".csv"
+		CorrSortie=dossier+"/corrections.csv"
+	 #nomCSV=dossier+"/copies/notes-"+str(cps.id)+".csv"
+		corr=qcmc.correction(CorrSortie,reponsesElevesCSV)
+		corr.calculer()
+		for note in corr.note:
+			cc=CopieCorrigee.objects.get(numero=int(note[0]),copies=cps)
+			cc.note=note[1]
+			cc.save()
+
+		cps.corrigees=True
+		cps.save()
+	except Exception,er:
+		print("Erreur lors de la correction",er)
+		cps.corrigees=True
+		cps.save()
+
+

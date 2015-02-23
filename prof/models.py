@@ -24,6 +24,7 @@ class CoreQcm(models.Model):
 	nbexos = models.ManyToManyField(CoreBanque, through='CoreNbExos')
 	erreurtex =  models.BooleanField(default=True)
 	generation = models.IntegerField(default=0)
+	nmax = models.IntegerField(default=0)
 
 
 class CoreNbExos(models.Model):
@@ -33,6 +34,9 @@ class CoreNbExos(models.Model):
 	position = models.IntegerField()
 	
 class CoreExo(models.Model):
+	def reponses(self):
+		return sorted(self.corereponse_set.all(), key=lambda r: int(r.position))
+
 	question = models.CharField(max_length=2000, default="En quoi l'escalade est un super sport?")
 	corrige = models.CharField(max_length=2000, default="Parce qu'il n'y a pas mieux!\n\\[\n\\int_0^\\infty e^{-x}dx = 1 \n\\]" )
 	type = models.CharField(max_length=200)
@@ -51,13 +55,30 @@ class CoreQcmPdf(models.Model):
 	qcm = models.ForeignKey(CoreQcm)
 	paquet = models.IntegerField()
 	exos = models.ManyToManyField(CoreExo,through='CoreExoQcmPdf')
-	reponses = models.CharField(max_length=200, default="")
-
+	reponses = models.CharField(max_length=200, default='')
+	positionscases = models.CharField(max_length=1000, default='')
+	pages = models.IntegerField(default=0)
 	
 class CoreExoQcmPdf(models.Model):
 	qcmpdf = models.ForeignKey(CoreQcmPdf)
 	exo = models.ForeignKey(CoreExo)
 	position = models.IntegerField()
+
+class CoreCopie(models.Model):
+	eleve = models.ForeignKey(Eleve)
+	qcmpdf = models.ForeignKey(CoreQcmPdf)
+	reponsescases = models.CharField(max_length=200,default="")
+	
+class CoreCopies(models.Model):
+	def renommage(instance, nom):
+		return("ups/"+str(instance.qcm.prof.id)+"/"+str(instance.qcm.id)+"/copies/"+nom)
+	qcm = models.ForeignKey(CoreQcm)
+	fichier = models.FileField(upload_to=renommage, verbose_name="Copies")
+	corrigees=models.BooleanField(default=0)
+	nom=models.CharField(max_length=200)
+
+
+
 
 # Create your models here.
 
@@ -114,18 +135,10 @@ class NbExos(models.Model):
 	qcm = models.ForeignKey(Qcm)
 	exo = models.ForeignKey(Exo)
 
-class Copies(models.Model):
-	def renommage(instance, nom):
-		return("ups/"+str(instance.qcm.prof.id)+"/"+str(instance.qcm.id)+"/copies/"+nom)
-	qcm = models.ForeignKey(Qcm)
-	fichier = models.FileField(upload_to=renommage, verbose_name="Copies")
-	corrigees=models.BooleanField(default=0)
-	nom=models.CharField(max_length=200)
-
 class CopieCorrigee(models.Model):
 	eleve=models.ForeignKey(Eleve)
 	numero=models.IntegerField()
-	copies=models.ForeignKey(Copies)
+	copies=models.ForeignKey(CoreCopies)
 	note=models.FloatField(default=0)
 	qcm = models.ForeignKey(Qcm)
 

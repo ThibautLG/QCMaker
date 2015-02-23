@@ -2,7 +2,27 @@
 
 
 {% block content %}
+<h2>Associer une copie </h2>
+<form action="{% url 'prof.views.ehome' %}" method="post">
+    {% csrf_token %}
+    {{ formAssign}} <input type="submit" value="Associer" />
+</form>
+
+{% if err == '1' %}
+Numéro incorrect
+{% endif %}
+{% if err == '2' %}
+Copie non corrigée ou inexistante
+{% endif %}
+{% if err == '3' %}
+Copie déjà assignée à un élève
+{% endif %}
+{% if err == '4' %}
+Vous avez déjà une copie assignée pour ce QCM.
+{% endif %}
+
 {% if listecps %}
+<hr width="75%" align="center">
 <h2>Liste de vos notes:</h2>
 <table cellspacing="20%">
 <tr><td><h3>Nom du QCM</h3></td><td><h3>Note</h3></td></tr>
@@ -21,23 +41,5 @@
 </tr></td>
 {% endfor %}
 </table>
-<br><br>
-{% endif %}
-<form action="{% url 'prof.views.ehome' %}" method="post">
-    {% csrf_token %}
-    {{ formAssign}} <input type="submit" value="Associer" />
-</form>
-
-{% if err == '1' %}
-Numéro incorrect
-{% endif %}
-{% if err == '2' %}
-Copie non corrigée ou inexistante
-{% endif %}
-{% if err == '3' %}
-Copie déjà assignée à un élève
-{% endif %}
-{% if err == '4' %}
-Vous avez déjà une copie assignée pour ce QCM.
 {% endif %}
 {% endblock %}

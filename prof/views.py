@@ -42,30 +42,6 @@ def genererCSVnotes(qcm):
 	return str(dossier+"notes.csv")
 	
 
-def importoriginaux(qcmpdf):
-	dossier=os.path.dirname(qcmpdf.qcm.template.path)+"/"
-	conf=qcmi.ConfigurationImport(dossier)
-	conf.nmax=qcmpdf.qcm.nmax
-	conf.pickle = qcmpdf.fichier+".pickle"
-	sp.check_call(["convert", "-density", '200', qcmpdf.fichier, dossier+"originaux/original.jpg"])
-	listeoriginaux=sorted([x for x in os.listdir(dossier+"originaux") if x.endswith('.jpg')], key=lambda r: int(''.join(x for x in r if x.isdigit())))
-	originaux=list()
-	for i in range(len(listeoriginaux)):
-		ori=qcmi.Original(dossier+"originaux/"+listeoriginaux[i],conf)
-		if len(originaux)==0:
-			originaux.append([ori])
-		else:
-			if ori.code == originaux[-1][0].code:
-				originaux[-1].append(ori)
-			else:
-				originaux.append([ori])
-		os.remove(dossier+"originaux/"+listeoriginaux[i])
-	with open(conf.pickle, 'w') as f:
-		pickle.dump(originaux, f)
-	
-	qcmpdf.traite=True
-	qcmpdf.save()
-
 
 def correction(cps):
 	
@@ -373,7 +349,12 @@ def home(request):
 	print(nom)
 	if not is_prof(nom):
 		return redirect('prof.views.ehome')
-	pr,nouveauprof=Enseignant.objects.get_or_create(nom=nom)
+	pr,nouveauprof = Enseignant.objects.get_or_create(nom=nom)
+	if nouveauprof:
+		try:
+			os.mkdir('media/ups/'+str(pr.id))
+		except:
+			print('Erreur lors de la création du nouveau dossier prof')
 
 	formNouvelleBanque = AjouterBanque(request.POST)
 	formBanque = ChoixBanque(request.POST)
@@ -434,10 +415,10 @@ def qcmaker(request):
 	formNEntete = Entete(request.POST)
 
 	#on remplit la liste des QCMs (pour tester le formulaire de choix de QCM)
-	listeqcms=pr.qcm_set.all()
-	listeChoix=list()
-	for qcmt in listeqcms:
-		listeChoix.append((qcmt.nom,qcmt.nom))
+	listeqcms = sorted(pr.coreqcm_set.all(), key=lambda r: int(r.id),reverse=True)
+	listeChoix = list()
+	for lqcm in listeqcms:
+		listeChoix.append((lqcm.id,lqcm.nom))
 	formChoix = QCMChoix(request.POST)
 	formChoix.setListe(listeChoix)
 	formTelecharger = Telecharger(request.POST)
@@ -452,7 +433,7 @@ def qcmaker(request):
 	formAjoutBanque.setListe(listebanques)
 
 	formDel=EffacerBanque(request.POST)
-	print(request.session)	
+	print(request.session['qcm'])	
 	if request.method == 'POST':  # S'il s'agit d'une requête POST
 	
 		#si nouveau QCM
@@ -470,6 +451,7 @@ def qcmaker(request):
 		
 		#si QCM existant
 		elif formChoix.is_valid():
+			print('Formulaire de choix de QCM valide')
 			try:
 				qcm=CoreQcm.objects.get(prof=pr,id=int(formChoix.cleaned_data['qcm']))
 				request.session['qcm']=qcm.id
@@ -514,7 +496,8 @@ def qcmaker(request):
 				qcm.save()
 				try:
 					BgJob(core.genererQcm,(qcm,formGenerer.cleaned_data['nbpdfs']))
-					BgJob(core.genererPdfs,(qcm,dossier+'/'+str(qcm.id)))
+					BgJob(core.genererPdfs,(qcm.id,dossier+'/'+str(qcm.id)))
+					BgJob(core.importOriginaux,qcm.id)
 					return redirect('prof.views.qcmanage')
 				except Exception, er:
 					qcm.delete()
@@ -581,14 +564,13 @@ def qcmanage(request):
 		formGenNotes = TelechargerNotes(request.POST)
 		#si téléchargement de qcmpdf
 		if formTelecharger.is_valid():
-			qcmpdf=QcmPdf.objects.get(fichier=formTelecharger.cleaned_data['fichieratel'])
-			return telecharger(request,formTelecharger.cleaned_data['fichieratel'])
+			return telecharger(request,dossier+'/'+str(qcm.id)+'/originaux/'+formTelecharger.cleaned_data['fichieratel'])
 		#si upload de copie
 		elif formAjoutCopies.is_valid():
-			cps=Copies(qcm=qcm,fichier=formAjoutCopies.cleaned_data['fichiercp'],nom=str(formAjoutCopies.cleaned_data['fichiercp']))
+			cps=CoreCopies(qcm=qcm,fichier=formAjoutCopies.cleaned_data['fichiercp'],nom=str(formAjoutCopies.cleaned_data['fichiercp']))
 			cps.save()
 			try:
-				BgJob(correction,cps)
+				BgJob(core.correctionCopies,(cps,dossier+'/'+str(qcm.id)))
 			except Exception, er:
 				print("Erreur : ",er)
 				cps.delete()
@@ -616,7 +598,7 @@ def qcmanage(request):
 
 	#on remplit la liste des pdf du qcm
 	try:
-		listepdfqcmtemp = [x for x in os.listdir(dossier+'/'+str(qcm.id)+'/originaux') if x.startswith('exos-') and x.endswith('.pdf')]
+		listepdfqcmtemp = sorted([x for x in os.listdir(dossier+'/'+str(qcm.id)+'/originaux') if x.startswith('exos-') and x.endswith('.pdf')],key=lambda r: int(''.join(x for x in r if x.isdigit())))
 	except:
 		listepdfqcmtemp = list()
 	print(listepdfqcmtemp)
@@ -649,7 +631,7 @@ def qcmanage(request):
 		
 
 	#on remplit la liste des copies
-	listecopiestemp=Copies.objects.filter(qcm=qcm)
+	listecopiestemp=CoreCopies.objects.filter(qcm=qcm)
 	listecopies=list()
 	for cp in listecopiestemp:
 		#le worker marche encore, correction de copies
