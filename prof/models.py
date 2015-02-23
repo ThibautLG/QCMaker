@@ -58,6 +58,7 @@ class CoreQcmPdf(models.Model):
 	reponses = models.CharField(max_length=200, default='')
 	positionscases = models.CharField(max_length=1000, default='')
 	pages = models.IntegerField(default=0)
+	positionspts = models.CharField(max_length=1000, default='')
 	
 class CoreExoQcmPdf(models.Model):
 	qcmpdf = models.ForeignKey(CoreQcmPdf)

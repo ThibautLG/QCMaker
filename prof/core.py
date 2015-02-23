@@ -27,7 +27,8 @@ sepCodeExo = "%%%codeExo\n"
 sepNom = "%%%nomQCM\n"
 sepTexte = "%%%texteQCM\n"
 
-caseVide="case_vide.jpg"
+caseVide = "case_vide.jpg"
+dimCaseVide = cv2.imread(caseVide,0).shape[::-1]
 sep=cv2.imread("sep.jpg",0)
 pts=[cv2.imread("pt1.jpg",0),cv2.imread("pt2.jpg",0),cv2.imread("pt3.jpg",0),]
 zones=[[(1000,1700),(0,400)],[(1300,1700),(2100,2400)],[(0,400),(2100,2300)]]
@@ -289,6 +290,13 @@ class Copie():
 	def __init__(self):
 		pass
 	
+	def ptsstr(self):
+		ptsstr = []
+		for pt in self.pts:
+			for c in pt:
+				ptsstr.append(str(c))
+		return ','.join(ptsstr)
+	
 	#méthode pour lire les chiffres du code (la suite de 0101 en haut à droite)
 	def lireChiffres(self):
 		
@@ -366,6 +374,7 @@ class Original(Copie):
 		del self.imgCode
 		del self.res
 		
+	
 	#l'essentiel est fait ici: on charge, on trouve les cases vides pour qu'on sache où les trouver sur la copie de l'élève
 	def lire(self,imgFichier,templateFichier):
 		
@@ -395,8 +404,9 @@ class Original(Copie):
 
 class Eleve(Copie):
 	
-	def __init__(self,imgFichier):
+	def __init__(self,imgFichier,nmax):
 		#on charge et on tronque PAS
+		self.nmax = nmax
 		self.imgFichier=imgFichier
 		self.img = cv2.imread(imgFichier,0)
 		self.imgRGB = cv2.imread(imgFichier,1)
@@ -409,7 +419,7 @@ class Eleve(Copie):
 	#on compare la copie à l'original (on met la copie de l'élève à l'échelle de l'original, on lit les cases, et on décide si elles sont cochées ou non
 	def compare(self,original):
 		
-		w, h = original.dimCV
+		w, h = dimCaseVide
 		M=cv2.getAffineTransform(np.array(self.pts,dtype="float32"),np.array(original.pts,dtype="float32"))
 		rows,cols = self.img.shape
 		self.img = cv2.warpAffine(self.img,M,(cols,rows))
@@ -457,6 +467,8 @@ def importOriginal(qcm,fichier,dossier):
 		for case in ori.cases:
 			print(case)
 			qcmpdf.positionscases += str(qcmpdf.pages)+','+str(case[0])+','+str(case[1])+';'
+		qcmpdf.positionspts += ori.ptsstr()+";"
+		print(qcmpdf.positionspts)
 		qcmpdf.save()
 		os.remove(dossier+"/"+listeoriginaux[i])
 	
@@ -474,25 +486,20 @@ def importOriginaux(idqcm):
 
 
 def correctionCopies(args):
-	cps = args[0]
-	dossier = args[1]
+	idqcm = args[0]
+	cps = args[1]
+	qcm = CoreQcm.objects.get(id=idqcm)
+	dossier = 'media/ups/'+str(qcm.prof.id)+'/'+str(qcm.id)
 	try:
 		os.mkdir(dossier+"/copies/"+str(cps.id))
 		sp.check_call(["convert", "-size", "1653x2338", cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
+		
 		print('On y est!')
-		listepickle=[x for x in os.listdir(dossier+"/originaux") if x.endswith('.pickle')]
-		originaux=list()
-		for p in listepickle:
-			with open(dossier+"/originaux/"+p) as f:
-				originaux += pickle.load(f)
-
-		conf=qcmi.ConfigurationImport(dossier+"/")
-		conf.nmax=cps.qcm.nmax
 		listecopies=sorted([x for x in os.listdir(dossier+"/copies/"+str(cps.id)) if x.endswith('.jpg')], key=lambda r: int(''.join(x for x in r if x.isdigit())))
 		copies=list()
-		copies.append([qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[0],conf)])
+		copies.append([Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[0],qcm.nmax)])
 		for i in range(len(listecopies)-1):	
-			cop=qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[i+1],conf)
+			cop=qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[i+1])
 		 ### les copies doivent être scannées dans l'ordre
 			if cop.code == copies[-1][0].code:
 				copies[-1].append(cop)
