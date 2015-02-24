@@ -432,21 +432,22 @@ class CopieEleve(Copie):
 		self.imgRGB = cv2.warpAffine(self.imgRGB,M,(cols,rows))
 		
 		self.reponses=list()
-		tt=list()
-		for pt in originalcases:
-			timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
-			tloc=np.where(timg>200)
-			tloc=zip(*tloc[::-1])
-			tt.append(len(tloc))
+		#tt=list()
+		#for pt in originalcases:
+		#	timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
+		#	tloc=np.where(timg>200)
+		#	tloc=zip(*tloc[::-1])
+		#	tt.append(len(tloc))
 			
-		tt.sort(reverse=True)
+		#tt.sort(reverse=True)
 		for pt in originalcases:
 			timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
 			tloc=np.where(timg>200)
 			tloc=zip(*tloc[::-1])
 			tn=len(tloc)
-			if tn>=tt[0]*thresholdCase:
+			if tn>=w*h*thresholdCase:
 				self.reponses.append('0')
+			#	cv2.rectangle(self.imgRGB, (pt[0]-w/2,pt[1]-h/2), (pt[0] + 3*w/2, pt[1] + 3*h/2), (0,255,255), 2)
 			else:
 				self.reponses.append('1')
 				timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
