@@ -50,6 +50,17 @@ class CoreReponse(models.Model):
 	position = models.IntegerField()
 	
 class CoreQcmPdf(models.Model):
+	def getpts(self,page):
+		pts = self.positionspts.split(';')
+		ipts = ((int(pts[page-1].split(',')[0]),int(pts[page-1].split(',')[1])),(int(pts[page-1].split(',')[2]),int(pts[page-1].split(',')[3])),(int(pts[page-1].split(',')[4]),int(pts[page-1].split(',')[5])))
+		print('ipts: '+str(ipts))
+		return ipts
+	def getcases(self,page):
+		cases = self.positionscases.split(';')
+		cases = [(int(case.split(',')[1]),int(case.split(',')[2])) for case in cases if case.split(',')[0]==str(page)]
+		print('Cases: '+str(cases))
+		return cases
+
 	numero = models.IntegerField()
 	code = models.CharField(max_length=200)
 	qcm = models.ForeignKey(CoreQcm)
@@ -66,9 +77,12 @@ class CoreExoQcmPdf(models.Model):
 	position = models.IntegerField()
 
 class CoreCopie(models.Model):
+	def getpage(self,page):
+		return self.fichiers.split(';')[page-1]
 	eleve = models.ForeignKey(Eleve)
 	qcmpdf = models.ForeignKey(CoreQcmPdf)
 	reponsescases = models.CharField(max_length=200,default="")
+	fichiers = models.CharField(max_length=1000,default="")
 	
 class CoreCopies(models.Model):
 	def renommage(instance, nom):

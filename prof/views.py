@@ -570,7 +570,7 @@ def qcmanage(request):
 			cps=CoreCopies(qcm=qcm,fichier=formAjoutCopies.cleaned_data['fichiercp'],nom=str(formAjoutCopies.cleaned_data['fichiercp']))
 			cps.save()
 			try:
-				BgJob(core.correctionCopies,(qcm,cps))
+				BgJob(core.correctionCopies,(qcm.id,cps))
 			except Exception, er:
 				print("Erreur : ",er)
 				cps.delete()

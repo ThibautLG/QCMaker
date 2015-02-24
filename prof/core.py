@@ -8,12 +8,12 @@
 #							note@reponse2
 #on veut tirer un certain nombre de questions au hasard dans chaque liste d'exos que l'on se donne
 
+import sys
 import random
 import io
 import subprocess as sp
 import os
 import time
-import sys
 import shutil as sh
 import numpy as np
 import cv2
@@ -326,7 +326,9 @@ class Copie():
 	def trouverpt(self,i):
 		method = 'cv2.TM_CCOEFF_NORMED'	
 		method = eval(method)
+		print('trouverpt: avant res')
 		res = cv2.matchTemplate(self.img[zones[i][1][0]:zones[i][1][1],zones[i][0][0]:zones[i][0][1]],pts[i],method)
+		print('trouverpt: ok')
 		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
 		loc = np.where( res >= max_val)
 		loc = zip(*loc[::-1])
@@ -402,7 +404,7 @@ class Original(Copie):
 		self.cases=loc
 
 
-class Eleve(Copie):
+class CopieEleve(Copie):
 	
 	def __init__(self,imgFichier,nmax):
 		#on charge et on tronque PAS
@@ -411,30 +413,34 @@ class Eleve(Copie):
 		self.img = cv2.imread(imgFichier,0)
 		self.imgRGB = cv2.imread(imgFichier,1)
 		ret,self.img = cv2.threshold(self.img,200,255,cv2.THRESH_BINARY)
+		print('Eleve: lecture ok')
 		self.pts=[self.trouverpt(0),self.trouverpt(1),self.trouverpt(2)]
+		print(self.pts)
 		self.lireN()
+		print('Eleve: lireN ok')
 		self.lireChiffres()
+		print('Eleve: lireChiffres ok')
 		
 		
 	#on compare la copie à l'original (on met la copie de l'élève à l'échelle de l'original, on lit les cases, et on décide si elles sont cochées ou non
-	def compare(self,original):
+	def compare(self,originalpts,originalcases):
 		
 		w, h = dimCaseVide
-		M=cv2.getAffineTransform(np.array(self.pts,dtype="float32"),np.array(original.pts,dtype="float32"))
+		M = cv2.getAffineTransform(np.array(self.pts,dtype="float32"),np.array(originalpts,dtype="float32"))
 		rows,cols = self.img.shape
 		self.img = cv2.warpAffine(self.img,M,(cols,rows))
 		self.imgRGB = cv2.warpAffine(self.imgRGB,M,(cols,rows))
 		
 		self.reponses=list()
 		tt=list()
-		for pt in original.cases:
+		for pt in originalcases:
 			timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
 			tloc=np.where(timg>200)
 			tloc=zip(*tloc[::-1])
 			tt.append(len(tloc))
 			
 		tt.sort(reverse=True)
-		for pt in original.cases:
+		for pt in originalcases:
 			timg=self.img[pt[1]:pt[1]+h,pt[0]:pt[0]+w]
 			tloc=np.where(timg>200)
 			tloc=zip(*tloc[::-1])
@@ -447,7 +453,7 @@ class Eleve(Copie):
 				cv2.rectangle(self.imgRGB, (pt[0]-w/2,pt[1]-h/2), (pt[0] + 3*w/2, pt[1] + 3*h/2), (0,0,255), 2)
 		
 		#cv2.imwrite(self.conf.dossier+"/copie-"+self.code+"-"+str(random.random())+".jpg",self.imgRGB)
-		cv2.imwrite(self.imgFichier,self.imgRGB)
+		cv2.imwrite(self.imgFichier[:-4]+"-corrigee.jpg",self.imgRGB)
 		
 		del self.imgRGB
 		del self.img
@@ -492,72 +498,37 @@ def correctionCopies(args):
 	dossier = 'media/ups/'+str(qcm.prof.id)+'/'+str(qcm.id)
 	try:
 		os.mkdir(dossier+"/copies/"+str(cps.id))
-		sp.check_call(["convert", "-size", "1653x2338", cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
-		
+		#sp.check_call(["convert", "-size", "1653x2338", cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
+		sp.check_call(["convert", "-density", '200' , cps.fichier.path, dossier+"/copies/"+str(cps.id)+"/copies.jpg"])
 		print('On y est!')
 		listecopies=sorted([x for x in os.listdir(dossier+"/copies/"+str(cps.id)) if x.endswith('.jpg')], key=lambda r: int(''.join(x for x in r if x.isdigit())))
 		copies=list()
-		copies.append([Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[0],qcm.nmax)])
+		copies.append([CopieEleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[0],qcm.nmax)])
 		for i in range(len(listecopies)-1):	
-			cop=qcmi.Eleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[i+1])
+			cop=CopieEleve(dossier+"/copies/"+str(cps.id)+"/"+listecopies[i+1],qcm.nmax)
 		 ### les copies doivent être scannées dans l'ordre
 			if cop.code == copies[-1][0].code:
 				copies[-1].append(cop)
 			else:
 				copies.append([cop])
 
-		listeCodes=[o[0].code for o in originaux]
 		eleveinconnu,creation=Eleve.objects.get_or_create(nom="Élève non associé")
-		copiesasupprimer=list()
 		for copie in copies:
-
-			if not CopieCorrigee.objects.filter(numero=int(copie[0].code,2),qcm=cps.qcm):
-
-				cc=CopieCorrigee(copies=cps,numero=int(copie[0].code,2),eleve=eleveinconnu,qcm=cps.qcm)
-				cc.save()
-
-				try:
-					for i in range(len(copie)):
-						copie[i].compare(originaux[listeCodes.index(copie[i].code)][i])
-						ccjpg=CopieJPG(copiecorrigee=cc,fichier=copie[i].imgFichier)
-						ccjpg.save()
-
-				except Exception,er:
-					print('Erreur de correction: ',er)
-					cc.delete()
-					copiesasupprimer.append(copie)
-			else:
-				copiesasupprimer.append(copie)
-
-		for copie in copiesasupprimer:
-			copies.remove(copie)
-
-		listeRep=list()
-		for i in range(len(copies)):
-			listeRep.append([copies[i][0].code,"".join(copies[i][0].reponses)])
-			for j in range(len(copies[i])-1):
-				listeRep[-1][1]+="".join(copies[i][j+1].reponses)
-		fichierCSV=io.FileIO(dossier+"/copies/corr-"+str(cps.id)+".csv",'w')
-		for rep in listeRep:
-			fichierCSV.write(","+str(int(rep[0],2))+","+rep[1])
-			fichierCSV.write("\n")
-	       	fichierCSV.close()
-
-		reponsesElevesCSV=dossier+"/copies/corr-"+str(cps.id)+".csv"
-		CorrSortie=dossier+"/corrections.csv"
-	 #nomCSV=dossier+"/copies/notes-"+str(cps.id)+".csv"
-		corr=qcmc.correction(CorrSortie,reponsesElevesCSV)
-		corr.calculer()
-		for note in corr.note:
-			cc=CopieCorrigee.objects.get(numero=int(note[0]),copies=cps)
-			cc.note=note[1]
-			cc.save()
-
-		cps.corrigees=True
-		cps.save()
+			try:
+				qcmpdf = CoreQcmPdf.objects.get(numero=copie[0].numero,qcm=cps.qcm)
+				if len(copie) != qcmpdf.pages:
+					raise NameError('Erreur de correction: pas le bon nombre de pages')
+				if qcmpdf.reponses != '':
+					raise NameError('Erreur de correction: copie déjà corrigée: '+str(copie[0].imgFichier))
+				for i in range(len(copie)):
+					print("correctionCopie: ",copie[i].imgFichier)
+					copie[i].compare(qcmpdf.getpts(i+1),qcmpdf.getcases(i+1))
+					print('réponses trouvées :'+''.join(copie[i].reponses))
+					qcmpdf.reponses+=''.join(copie[i].reponses)
+				qcmpdf.save()
+			except Exception, er:
+				print('Erreur de correction: lecture des cases et points: '+str(er))
 	except Exception,er:
 		print("Erreur lors de la correction",er)
-		cps.corrigees=True
-		cps.save()
 
 
