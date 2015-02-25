@@ -2,56 +2,36 @@
 
 
 {% block head %}
-{% if encours or not importpdfini or correctionencours %}
+{% if encours or correctionencours or not importpdfini %}
 <meta http-equiv="refresh" content="10">
 {% endif %}
 {% endblock %}
 
 
 {% block content %}
-<h2>QCM {{ qcm.nom }}</h2><br><br>
-{{ qcm.nomTeX }}
 {% if listecps %}
 <br><br>
+<center>
 <form action="{% url 'prof.views.qcmanage' %}" method="post">
     {% csrf_token %}
     {{ formGenNotes }}	
 <input type="submit" value="Télécharger les notes" />
 </form>
+</center>
 <br>
 Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} corrigée{{ nbcopiescorrigees|pluralize }}.
 <br><br><br>
 <table cellspacing="20%" class="tableaunotes">
 <tr><td><h3>N° copie</h3></td><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
 {% for cp in listecps %}
-<tr><td>{{ cp.code }}</td><td><a name="{{ cp.id }}">{{ cp.nom }}</td><td>
-<form action="{% url 'prof.views.qcmanage' %}" method="post">
-
-{% csrf_token %}
-<table>
-{{ cp.formNote }}
-</table>
-</td><td>
-<input type="submit" name='hidden' value="MAJ Note">
-</form>
-</td><td>
-<form action="{% url 'prof.views.qcmanage' %}#{{ cp.id }}" method="post">
+<tr><td><a name="{{ cp.code }}"></a>{{ cp.code }}</td><td>{{ cp.nom }}</td>
+<td>{{ cp.note }}</td>
+<td>
+<form action="{% url 'prof.views.voircopie' %}" method="post">
     {% csrf_token %}
-    {% if not cp.jpg %}{{ cp.formMI }}{% endif %}
-	<input type="submit" value="{% if cp.jpg %}Masquer copie{% else %}Voir copie{% endif %}" />
-</form></td><td>
-<form action="{% url 'prof.views.qcmanage' %}" method="post">
-    {% csrf_token %}
-{{ cp.formEffCopie }}
-<input type="submit" value="X" />
-</form>
-</td></tr>
-<tr><td colspan="4">
-	{% for cjpg in cp.jpg %}
-	<a href="{% url 'prof.views.image' cjpg %}">
-	<img src="{% url 'prof.views.image' cjpg %}" style="height:456px"></a><!-- style="height:228px -->
-	{% endfor %}
-</td></tr>
+	{{ cp.formvoir }}
+	<input type="submit" value="Voir copie" />
+</form></td></tr>
 {% endfor %}
 </table>
 {% endif %}
@@ -59,11 +39,13 @@ Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} cor
 
 <h2>Liste des PDFs:</h2>
 {% for pdf in listepdfqcm %}
+<center>
 <form action="{% url 'prof.views.qcmanage' %}" method="post">
     {% csrf_token %}
 	{{ pdf.formTel }}
 	<input type="submit" value="{{ pdf.nom }}" />
 </form>
+</center>
 {% endfor %}
 {% if encours %}
 <br> En cours de préparation...

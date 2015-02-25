@@ -3,7 +3,8 @@
 from django.db import models
 from datetime import datetime
 from django.core.files.storage import FileSystemStorage
-import shutil,os
+import prof.core as core
+import shutil,os,cv2
 
 # Modeles pour le core.py
 class Enseignant(models.Model):
@@ -25,6 +26,7 @@ class CoreQcm(models.Model):
 	erreurtex =  models.BooleanField(default=True)
 	generation = models.IntegerField(default=0)
 	nmax = models.IntegerField(default=0)
+	formule = models.CharField(max_length=200,default='(v+f==1)*(1*v-0.5*f)')
 
 
 class CoreNbExos(models.Model):
@@ -45,7 +47,7 @@ class CoreExo(models.Model):
 	
 class CoreReponse(models.Model):
 	exo = models.ForeignKey(CoreExo)
-	nom = models.CharField(max_length=1)
+	nom = models.CharField(max_length=2)
 	texte = models.CharField(max_length=2000)
 	position = models.IntegerField()
 	
@@ -60,6 +62,48 @@ class CoreQcmPdf(models.Model):
 		cases = [(int(case.split(',')[1]),int(case.split(',')[2])) for case in cases if case.split(',')[0]==str(page)]
 		print('Cases: '+str(cases))
 		return cases
+	def getnote(self):
+		nbreponses = {}
+		irep = 0
+		note = 0.0
+		for qexo in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=self), key=lambda r: int(r.position)):
+			for reponse in sorted(qexo.exo.corereponse_set.all(), key=lambda r: int(r.position)):
+				try:
+					nbreponses[reponse.nom]+=int(self.reponses[irep])
+				except Exception, er:
+					nbreponses[reponse.nom]=int(self.reponses[irep])
+				irep+=1
+			note += (nbreponses['v']+nbreponses['f']==1)*(1*nbreponses['v']-0.5*nbreponses['f'])
+			nbreponses = {}
+		return max(note,0)
+	def getreponses(self):
+		irep = 0
+		listereponses = list()
+		for qexo in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=self), key=lambda r: int(r.position)):
+			listereponsesexo = list()
+			for reponse in sorted(qexo.exo.corereponse_set.all(), key=lambda r: int(r.position)):
+				try:
+					listereponsesexo.append(int(self.reponses[irep]))
+				except Exception, er:
+					print(er)
+					return list()
+				irep+=1
+			listereponses.append(listereponsesexo)
+		return listereponses
+
+	def setreponses(self,reponses):
+		if len(self.reponses)==len(reponses):
+			for r in reponses:
+				if r not in '01':
+					return 1
+		else:
+			return 1
+		self.reponses = reponses
+		self.save()
+		print('setreponses: '+self.reponses)
+		for copie in self.corecopie_set.all():
+			copie.setimage()
+		return 0
 
 	numero = models.IntegerField()
 	code = models.CharField(max_length=200)
@@ -79,9 +123,23 @@ class CoreExoQcmPdf(models.Model):
 class CoreCopie(models.Model):
 	def getpage(self,page):
 		return self.fichiers.split(';')[page-1]
+	def setimage(self):
+		w,h = core.dimCaseVide
+		reponses = self.qcmpdf.reponses
+		for page in [i+1 for i in range(self.qcmpdf.pages)]:
+			cases = self.qcmpdf.getcases(page)
+			imgFichier = self.getpage(page)[:-13]+'.jpg'
+			img = cv2.imread(imgFichier,1)
+			i = 0
+			for pt in cases:
+				print(pt,i)
+				if reponses[i]=='1':
+					cv2.rectangle(img,(pt[0]-w/2,pt[1]-h/2), (pt[0] + 3*w/2, pt[1] + 3*h/2), (0,0,255), 2)
+				i+=1
+			cv2.imwrite(self.getpage(page),img)
+
 	eleve = models.ForeignKey(Eleve)
 	qcmpdf = models.ForeignKey(CoreQcmPdf)
-	reponsescases = models.CharField(max_length=200,default="")
 	fichiers = models.CharField(max_length=1000,default="")
 	
 class CoreCopies(models.Model):
@@ -89,8 +147,8 @@ class CoreCopies(models.Model):
 		return("ups/"+str(instance.qcm.prof.id)+"/"+str(instance.qcm.id)+"/copies/"+nom)
 	qcm = models.ForeignKey(CoreQcm)
 	fichier = models.FileField(upload_to=renommage, verbose_name="Copies")
-	corrigees=models.BooleanField(default=0)
-	nom=models.CharField(max_length=200)
+	corrigees = models.BooleanField(default=0)
+	nom = models.CharField(max_length=200)
 
 
 

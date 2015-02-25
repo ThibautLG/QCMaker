@@ -263,25 +263,27 @@ def svg(request,id_svg, prefix):
 		return HttpResponse("Non disponible")
 	
 
-def image(request,id_cc):
+def image(request,id_cc,page):
 	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
-	
+	id_cc = int(id_cc)
+	page = int(page)
+	print(id_cc,page)
 	try:
 		el=Eleve.objects.get(nom=nom)
-		ccjpg=CopieJPG.objects.get(id=id_cc)
-		if el==ccjpg.copiecorrigee.eleve:
-			return telecharger(request,ccjpg.fichier)
+		cc=CoreCopie.objects.get(id=id_cc)
+		if el==cc.eleve:
+			return telecharger(request,cc.getpage(page))
 		else:
-			raise Exception(el.nom,ccjpg.copiecorrigee.eleve.nom)
+			raise Exception(el.nom,cc.eleve.nom)
 	except:
 		try:
 			pr=Enseignant.objects.get(nom=nom)
-			ccjpg=CopieJPG.objects.get(id=id_cc)
-			if pr==ccjpg.copiecorrigee.qcm.prof:
-				return telecharger(request,ccjpg.fichier)
+			cc=CoreCopie.objects.get(id=id_cc)
+			if pr==cc.qcmpdf.qcm.prof:
+				return telecharger(request,cc.getpage(page))
 		except Exception, er:
 			print("Erreur : ",er)
 			return HttpResponse("Non disponible")
@@ -293,10 +295,8 @@ def ehome(request):
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
 	el,nouveleleve=Eleve.objects.get_or_create(nom=nom)
-	mi_id=-1
 	if request.method == 'POST':
 		formAssign=AssignerCopie(request.POST)
-		formMontrerIm=MontrerImage(request.POST)
 		if formAssign.is_valid():
 			try:
 				qcmid,numcopie=formAssign.cleaned_data['numcopie'].split('-')
@@ -307,13 +307,14 @@ def ehome(request):
 				random.shuffle(codes)
 				random.shuffle(codes)
 				random.shuffle(codes)
-				numcopie=codes.index(numcopie)
-				qcm=Qcm.objects.get(id=qcmid)
+				numcopie = codes.index(numcopie)
+				qcm = CoreQcm.objects.get(id=qcmid)
+				qcmpdf = CoreQcmPdf.objects.get(qcm=qcm,numero=numcopie)
 			except:
 				err='1'
 			try:
-				if not el.copiecorrigee_set.filter(qcm=qcm):
-					cp=CopieCorrigee.objects.get(qcm=qcm,numero=numcopie)
+				if not [cc for cc in el.corecopie_set.all() if cc.qcmpdf.qcm==qcm]:
+					cp=CoreCopie.objects.get(qcmpdf=qcmpdf)
 					if cp.eleve==Eleve.objects.get(nom="Élève non associé"):
 						cp.eleve=el
 						cp.save()
@@ -324,20 +325,13 @@ def ehome(request):
 			except Exception, er:
 				print("Erreur : ",er)
 				err='2'
-		elif formMontrerIm.is_valid():
-			mi_id=formMontrerIm.cleaned_data['montrerimage']
-			request.session['mi_id']=mi_id
 				
 	#creation de la liste des copies de l'élève
 	listecps=list()
 	listecjpgtemp=list()
-	for cp in CopieCorrigee.objects.filter(eleve=el):
+	for cp in CoreCopie.objects.filter(eleve=el):
 		listecjpgtemp=list()
-		formtemp=MontrerImage(initial={'montrerimage':cp.id})
-		if mi_id == cp.id:
-			for ccc in cp.copiejpg_set.all():
-				listecjpgtemp.append(ccc.id)
-		listecps.append({'note':cp.note,'nom':cp.qcm.nomTeX,'jpg':listecjpgtemp,'formMI':formtemp})
+		listecps.append({'note':cp.qcmpdf.getnote(),'nom':cp.qcmpdf.qcm.nomTeX})
 	formAssign=AssignerCopie()
 	return render(request, 'ehome.html', locals())
 	
@@ -553,14 +547,10 @@ def qcmanage(request):
 		return redirect('prof.views.home')
 	
 	dossier = 'media/ups/'+str(pr.id)
-	mi_id=-1
 	
 	if request.method == 'POST':
 		formTelecharger = Telecharger(request.POST)
 		formAjoutCopies = AjoutCopies(request.POST,request.FILES)
-		formMontrerIm = MontrerImage(request.POST)
-		formEffCopie = EffacerCopie(request.POST)
-		formNote = Note(request.POST)
 		formGenNotes = TelechargerNotes(request.POST)
 		#si téléchargement de qcmpdf
 		if formTelecharger.is_valid():
@@ -574,17 +564,6 @@ def qcmanage(request):
 			except Exception, er:
 				print("Erreur : ",er)
 				cps.delete()
-		#si demande de montrer une copie (image)
-		elif formMontrerIm.is_valid():
-			mi_id=formMontrerIm.cleaned_data['montrerimage']
-		#si effacement d'une copie
-		elif formEffCopie.is_valid():
-			CopieCorrigee.objects.get(id=formEffCopie.cleaned_data['cpid']).delete()
-		#si mise à jour d'une note
-		elif formNote.is_valid():
-			cc=CopieCorrigee.objects.get(id=formNote.cleaned_data['copiecorrigeeid'])		
-			cc.note=formNote.cleaned_data['note']
-			cc.save()
 		#si téléchargement des notes au format CSV
 		elif formGenNotes.is_valid():
 			return telecharger(request,genererCSVnotes(qcm))
@@ -592,19 +571,13 @@ def qcmanage(request):
 		else:
 			print('rien')
 			
-			
-
-
-
 	#on remplit la liste des pdf du qcm
 	try:
 		listepdfqcmtemp = sorted([x for x in os.listdir(dossier+'/'+str(qcm.id)+'/originaux') if x.startswith('exos-') and x.endswith('.pdf')],key=lambda r: int(''.join(x for x in r if x.isdigit())))
 	except:
 		listepdfqcmtemp = list()
-	print(listepdfqcmtemp)
 	listepdfqcm=list()
 	for pdf in listepdfqcmtemp:
-		print(pdf)
 		pdform = Telecharger(initial={'fichieratel':pdf})
 		listepdfqcm.append({'nom':pdf,'formTel':pdform})
 		
@@ -618,15 +591,9 @@ def qcmanage(request):
 	random.shuffle(codes)
 	random.shuffle(codes)
 
-	for cp in [cc for cc in CopieCorrigee.objects.filter(qcm=qcm) if cc.copies.corrigees]:
-		listecjpgtemp=list()
-		formtemp=MontrerImage(initial={'montrerimage':cp.id})
-		tform=EffacerCopie(initial={'cpid':cp.id})
-		tformNote=Note(initial={'note':cp.note,'copiecorrigeeid':cp.id})
-		if mi_id == cp.id:
-			for ccc in cp.copiejpg_set.all():
-				listecjpgtemp.append(ccc.id)
-		listecps.append({'id':cp.id,'note':cp.note,'nom':cp.eleve.nom,'jpg':listecjpgtemp,'formMI':formtemp,'formEffCopie':tform,'formNote':tformNote,'code':codes[cp.numero]})
+	for cp in [cc for cc in CoreCopie.objects.all() if cc.qcmpdf.qcm==qcm]:
+		tform = VoirCopie(initial={'idcopieavoir':cp.id})
+		listecps.append({'id':cp.id,'note':cp.qcmpdf.getnote(),'nom':cp.eleve.nom,'jpg':listecjpgtemp,'code':codes[cp.qcmpdf.numero],'formvoir':tform})
 	nbcopiescorrigees=len(listecps)
 		
 
@@ -640,9 +607,9 @@ def qcmanage(request):
 		listecopies.append({'nom':cp.nom,'corrigee':cp.corrigees})
 
 	#le worker marche encore, création des pdfs
-	encours= qcm.generation<2
+	encours = qcm.generation<2
 	#le worker marche encore, import des pdfs
-	importpdfini = len(QcmPdf.objects.filter(qcm=qcm)) == len(QcmPdf.objects.filter(qcm=qcm,traite=True))
+	importpdfini = qcm.generation==3
 	formGenNotes = TelechargerNotes()
 	formAjoutCopies = AjoutCopies()
 					
@@ -753,3 +720,47 @@ def banque(request):
 	formAjouterExo = MakexoAjouterExo()
 	formModifierExo = MakexoModifierExo()
 	return render(request, 'banque.html', locals())
+
+def voircopie(request):
+
+	if not request.user.is_active:
+		return redirect('django_cas.views.login')
+	nom=str(request.user.username)
+	if not is_prof(nom):
+		return redirect('prof.views.ehome')
+	
+	try:
+		pr=Enseignant.objects.get(nom=nom)
+		qcm=CoreQcm.objects.get(id=request.session['qcm'])
+	except Exception,er:
+		return redirect('prof.views.home')
+	
+	dossier = 'media/ups/'+str(pr.id)
+	try:
+		copie = CoreCopie.objects.get(id=request.session['idcopie'])
+	except:
+		pass
+
+	if request.method == 'POST':
+		formVoirCopie = VoirCopie(request.POST) 
+		formChangerCases = ChangerCases(request.POST)
+		if formVoirCopie.is_valid():
+			idcopie = formVoirCopie.cleaned_data['idcopieavoir']
+			try:
+				copie = CoreCopie.objects.get(id=idcopie)
+				request.session['idcopie'] = copie.id
+			except:
+				print('Copie d\'id '+str(idcopie)+' non trouvée')
+				return redirect('prof.views.qcmanage')
+		elif formChangerCases.is_valid():
+			try:
+				copie = CoreCopie.objects.get(id=formChangerCases.cleaned_data['idcopieachanger'])
+				qcmpdf = copie.qcmpdf
+				qcmpdf.setreponses(formChangerCases.cleaned_data['reponses'])
+			except:
+				pass
+
+	infoscopie = {'id':copie.id,'nomeleve':copie.eleve.nom,'note':copie.qcmpdf.getnote(),'pages':[i+1 for i in range(copie.qcmpdf.pages)]}
+	reponsescopie = copie.qcmpdf.getreponses()
+	formChangerCases = ChangerCases({'idcopieachanger':copie.id,'reponses':copie.qcmpdf.reponses})
+	return render(request, 'voircopie.html', locals())

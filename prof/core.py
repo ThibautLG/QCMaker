@@ -431,6 +431,7 @@ class CopieEleve(Copie):
 		self.img = cv2.warpAffine(self.img,M,(cols,rows))
 		self.imgRGB = cv2.warpAffine(self.imgRGB,M,(cols,rows))
 		
+		cv2.imwrite(self.imgFichier,self.imgRGB)
 		self.reponses=list()
 		#tt=list()
 		#for pt in originalcases:
@@ -455,7 +456,7 @@ class CopieEleve(Copie):
 		
 		#cv2.imwrite(self.conf.dossier+"/copie-"+self.code+"-"+str(random.random())+".jpg",self.imgRGB)
 		cv2.imwrite(self.imgFichier[:-4]+"-corrigee.jpg",self.imgRGB)
-		
+			
 		del self.imgRGB
 		del self.img
 		del self.imgCode
@@ -515,6 +516,7 @@ def correctionCopies(args):
 
 		eleveinconnu,creation=Eleve.objects.get_or_create(nom="Élève non associé")
 		for copie in copies:
+			fichiers = ''
 			try:
 				qcmpdf = CoreQcmPdf.objects.get(numero=copie[0].numero,qcm=cps.qcm)
 				if len(copie) != qcmpdf.pages:
@@ -526,10 +528,14 @@ def correctionCopies(args):
 					copie[i].compare(qcmpdf.getpts(i+1),qcmpdf.getcases(i+1))
 					print('réponses trouvées :'+''.join(copie[i].reponses))
 					qcmpdf.reponses+=''.join(copie[i].reponses)
+					fichiers += copie[i].imgFichier[:-4]+'-corrigee.jpg;'
 				qcmpdf.save()
+				cp = CoreCopie(eleve=eleveinconnu,qcmpdf=qcmpdf,fichiers=fichiers)
+				cp.save()
 			except Exception, er:
 				print('Erreur de correction: lecture des cases et points: '+str(er))
+ 		cps.corrigees=True
+		cps.save()
 	except Exception,er:
 		print("Erreur lors de la correction",er)
-
-
+		copies.delete()

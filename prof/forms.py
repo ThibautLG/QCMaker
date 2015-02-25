@@ -69,13 +69,8 @@ class Entete(forms.Form):
 	nomTeX = forms.CharField(max_length=100,label="Sujet")
 	texteTeX = forms.CharField(label="Texte",widget=forms.Textarea)
 
-
-
-
-
-
-################################################# OLD ################################################# 
-
+class TelechargerNotes(forms.Form):
+	generernotes = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
 
 
 class Generer(forms.Form):
@@ -97,38 +92,39 @@ class Generer(forms.Form):
 
 		return nbpdfs
 
+class AjoutCopies(forms.Form):
+	fichiercp = forms.FileField(label="Copies")
+	
+class NouveauQCM(forms.Form):
+	titre = forms.CharField(max_length=100,label="",initial="Nouveau QCM")
+
+class VoirCopie(forms.Form):
+	idcopieavoir = forms.IntegerField(widget=forms.HiddenInput())
+
+class ChangerCases(forms.Form):
+	
+	idcopieachanger = forms.IntegerField(widget=forms.HiddenInput())
+	reponses = forms.CharField(max_length=200,initial='')
+
+
+################################################# OLD ################################################# 
+
+
 	
 class EffacerCopie(forms.Form):
 	cpid = forms.IntegerField(widget=forms.HiddenInput())
 	
-	
-class EffacerFExo(forms.Form):
-	fexo = forms.IntegerField(widget=forms.HiddenInput())
-	
 class Effacer(forms.Form):
 	fichieraeff = forms.CharField(label="Fichier",widget=forms.HiddenInput())
-	
-class TelechargerNotes(forms.Form):
-	generernotes = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
 
 
-class MontrerImage(forms.Form):
-	montrerimage = forms.IntegerField(widget=forms.HiddenInput())
-
-class AjoutCopies(forms.Form):
-	fichiercp = forms.FileField(label="Copies")
-	
 class Telecharger(forms.Form):
 	fichieratel = forms.CharField(label="Fichier",widget=forms.HiddenInput())
 	
 
-class Note(forms.Form):
-	note = forms.FloatField(label="")
-	copiecorrigeeid = forms.IntegerField(widget=forms.HiddenInput())
-
-class NouveauQCM(forms.Form):
-	titre = forms.CharField(max_length=100,label="",initial="Nouveau QCM")
-
+#class Note(forms.Form):
+#	note = forms.FloatField(label="")
+#	copiecorrigeeid = forms.IntegerField(widget=forms.HiddenInput())
 #class NouveauxExos(forms.Form):
 #	exos = forms.FileField(label="Charger un nouveau fichier .exos")
 
