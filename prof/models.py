@@ -3,7 +3,6 @@
 from django.db import models
 from datetime import datetime
 from django.core.files.storage import FileSystemStorage
-import prof.core as core
 import shutil,os,cv2
 
 # Modeles pour le core.py
@@ -124,7 +123,7 @@ class CoreCopie(models.Model):
 	def getpage(self,page):
 		return self.fichiers.split(';')[page-1]
 	def setimage(self):
-		w,h = core.dimCaseVide
+		w,h = 21,21
 		reponses = self.qcmpdf.reponses
 		for page in [i+1 for i in range(self.qcmpdf.pages)]:
 			cases = self.qcmpdf.getcases(page)
