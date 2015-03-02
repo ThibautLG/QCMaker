@@ -106,6 +106,9 @@ class ChangerCases(forms.Form):
 	idcopieachanger = forms.IntegerField(widget=forms.HiddenInput())
 	reponses = forms.CharField(max_length=200,initial='')
 
+class SignalerErreur(forms.Form):
+	idcopieerronee = forms.IntegerField(widget=forms.HiddenInput())
+
 
 ################################################# OLD ################################################# 
 

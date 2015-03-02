@@ -9,8 +9,8 @@
 
 
 {% block content %}
-{% if listecps %}
 <br><br>
+{% if listecps %}
 <center>
 <form action="{% url 'prof.views.qcmanage' %}" method="post">
     {% csrf_token %}
@@ -18,24 +18,8 @@
 <input type="submit" value="Télécharger les notes" />
 </form>
 </center>
-<br>
-Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} corrigée{{ nbcopiescorrigees|pluralize }}.
-<br><br><br>
-<table cellspacing="20%" class="tableaunotes">
-<tr><td><h3>N° copie</h3></td><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
-{% for cp in listecps %}
-<tr><td><a name="{{ cp.code }}"></a>{{ cp.code }}</td><td>{{ cp.nom }}</td>
-<td>{{ cp.note }}</td>
-<td>
-<form action="{% url 'prof.views.voircopie' %}" method="post">
-    {% csrf_token %}
-	{{ cp.formvoir }}
-	<input type="submit" value="Voir copie" />
-</form></td></tr>
-{% endfor %}
-</table>
+<hr width="75%" align="center"><br>
 {% endif %}
-
 
 <h2>Liste des PDFs:</h2>
 {% for pdf in listepdfqcm %}
@@ -52,6 +36,7 @@ Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} cor
 {% endif %}
 
 {% if listecopies %}
+<hr width="75%" align="center"><br>
 <h2>Liste des copies chargées:</h2>
 <table>
 	{% for cp in listecopies %}
@@ -64,6 +49,9 @@ Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} cor
  <br><br>
 {% if not encours %}
 {% if importpdfini %}
+
+<hr width="75%" align="center"><br>
+
 <h2>Charger des copies à corriger:</h2>
 <table><tr>
 <form action="{% url 'prof.views.qcmanage' %}" method="post" enctype="multipart/form-data">
@@ -75,4 +63,39 @@ Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} cor
 Préparation des corrections automatiques...
 {% endif %}
 {% endif %}
+
+{% if listecps %}
+<hr width="75%" align="center"><br>
+Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} corrigée{{ nbcopiescorrigees|pluralize }}.
+<br><br><br>
+<table cellspacing="20%" class="tableaunotes">
+<tr><td><h3>N° copie</h3></td><td><h3>Élève</h3></td><td><h3>Note</h3></td></tr>
+{% for cp in listecps %}
+{% if cp.malcorrigee %}
+<tr><td><a name="{{ cp.code }}"></a>{{ cp.code }}</td><td>{{ cp.nom }}</td>
+<td>{{ cp.note }}</td>
+<td>
+<form action="{% url 'prof.views.voircopie' %}" method="post">
+    {% csrf_token %}
+	{{ cp.formvoir }}
+	<input style="border-color:#FF0000" border=2px type="submit" value="Voir copie" />
+</form></td></tr>
+{% endif %}
+{% endfor %}
+{% for cp in listecps %}
+{% if not cp.malcorrigee %}
+<tr><td><a name="{{ cp.code }}"></a>{{ cp.code }}</td><td>{{ cp.nom }}</td>
+<td>{{ cp.note }}</td>
+<td>
+<form action="{% url 'prof.views.voircopie' %}" method="post">
+    {% csrf_token %}
+	{{ cp.formvoir }}
+	<input type="submit" value="Voir copie" />
+</form></td></tr>
+{% endif %}
+{% endfor %}
+</table>
+{% endif %}
+
+
 {% endblock %}

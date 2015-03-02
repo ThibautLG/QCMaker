@@ -12,7 +12,6 @@ Note: {{ infoscopie.note }}
 	<img src="{% url 'prof.views.image' infoscopie.id page %}" style="width:528px"></a>
 	</center>
 {% endfor %}
-{{ reponsescopie }}
 	<form action="{% url 'prof.views.voircopie' %}" method="post">
 		<center>
 		{% csrf_token %}

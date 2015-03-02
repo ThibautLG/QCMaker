@@ -255,8 +255,22 @@ def svg(request,id_svg, prefix):
 	elif prefix == '2':
 		prefix = "qcm-prev"
 	try:
-		pr = Enseignant.objects.get(nom=nom)
-		svg = "media/ups/"+str(pr.id)+"/"+prefix+"-"+str(id_svg)+".svg"
+		try:
+			pr = Enseignant.objects.get(nom=nom)
+			svg = "media/ups/"+str(pr.id)+"/"+prefix+"-"+str(id_svg)+".svg"
+		except:
+			try:
+				el = Eleve.objects.get(nom=nom)
+				exo = CoreExo.objects.get(id=int(id_svg))
+				ok = False
+				for copie in el.corecopie_set.all():
+					if exo in copie.qcmpdf.exos.all():
+						ok = True
+				if ok:
+					svg = "media/ups/"+str(exo.banque.prof.id)+"/"+prefix+"-"+str(id_svg)+".svg"
+			except Exception,er:
+				print('Erreur svg: '+str(er))
+				return HttpResponse("Non disponible")
 		return telecharger(request,svg)
 	except Exception, er:
 		print("Erreur : ",er)
@@ -325,13 +339,12 @@ def ehome(request):
 			except Exception, er:
 				print("Erreur : ",er)
 				err='2'
-				
+
 	#creation de la liste des copies de l'élève
-	listecps=list()
-	listecjpgtemp=list()
-	for cp in CoreCopie.objects.filter(eleve=el):
-		listecjpgtemp=list()
-		listecps.append({'note':cp.qcmpdf.getnote(),'nom':cp.qcmpdf.qcm.nomTeX})
+	listecps  = list()
+	for cp in [cc for cc in CoreCopie.objects.all() if cc.eleve == el]:
+		tform = VoirCopie(initial={'idcopieavoir':cp.id})
+		listecps.append({'id':cp.id,'note':cp.qcmpdf.getnote(),'nom':cp.qcmpdf.qcm.nomTeX,'formvoir':tform})
 	formAssign=AssignerCopie()
 	return render(request, 'ehome.html', locals())
 	
@@ -593,7 +606,7 @@ def qcmanage(request):
 
 	for cp in [cc for cc in CoreCopie.objects.all() if cc.qcmpdf.qcm==qcm]:
 		tform = VoirCopie(initial={'idcopieavoir':cp.id})
-		listecps.append({'id':cp.id,'note':cp.qcmpdf.getnote(),'nom':cp.eleve.nom,'jpg':listecjpgtemp,'code':codes[cp.qcmpdf.numero],'formvoir':tform})
+		listecps.append({'id':cp.id,'note':cp.qcmpdf.getnote(),'nom':cp.eleve.nom,'jpg':listecjpgtemp,'code':codes[cp.qcmpdf.numero],'formvoir':tform,'malcorrigee':cp.malcorrigee})
 	nbcopiescorrigees=len(listecps)
 		
 
@@ -757,6 +770,8 @@ def voircopie(request):
 				copie = CoreCopie.objects.get(id=formChangerCases.cleaned_data['idcopieachanger'])
 				qcmpdf = copie.qcmpdf
 				qcmpdf.setreponses(formChangerCases.cleaned_data['reponses'])
+				copie.malcorrigee = False
+				copie.save()
 			except:
 				pass
 
@@ -764,3 +779,55 @@ def voircopie(request):
 	reponsescopie = copie.qcmpdf.getreponses()
 	formChangerCases = ChangerCases({'idcopieachanger':copie.id,'reponses':copie.qcmpdf.reponses})
 	return render(request, 'voircopie.html', locals())
+
+def evoircopie(request):
+
+	if not request.user.is_active:
+		return redirect('django_cas.views.login')
+	nom=str(request.user.username)
+	
+	try:
+		el=Eleve.objects.get(nom=nom)
+	except Exception,er:
+		return redirect('prof.views.ehome')
+	
+	dossier = 'media/ups/'+str(el.id)
+	try:
+		copie = CoreCopie.objects.get(id=request.session['idecopie'])
+	except:
+		pass
+
+	if request.method == 'POST':
+		formVoirCopie = VoirCopie(request.POST) 
+		formChangerCases = ChangerCases(request.POST)
+		formSignalerErreur = SignalerErreur(request.POST)
+		print(formSignalerErreur)
+		if formVoirCopie.is_valid():
+			idcopie = formVoirCopie.cleaned_data['idcopieavoir']
+			try:
+				copie = CoreCopie.objects.get(id=idcopie)
+				request.session['idecopie'] = copie.id
+			except:
+				print('Copie d\'id '+str(idcopie)+' non trouvée')
+				return redirect('prof.views.ehome')
+		elif formSignalerErreur.is_valid():
+			idcopie = formSignalerErreur.cleaned_data['idcopieerronee']
+			print('ouhou')
+			try:
+				copie = CoreCopie.objects.get(id=idcopie)
+				copie.malcorrigee = True
+				copie.save()
+				print('id:'+str(copie.id))
+			except:
+				print('Copie d\'id '+str(idcopie)+' non trouvée')
+				
+		elif not copie:
+			return redirect('prof.views.ehome')
+
+	infoscopie = {'id':copie.id,'nomcopie':copie.qcmpdf.qcm.nomTeX,'note':copie.qcmpdf.getnote(),'pages':[i+1 for i in range(copie.qcmpdf.pages)],'malcorrigee':copie.malcorrigee}
+	exocopies = list()
+	for exo in copie.qcmpdf.exos.all():
+		exocopies.append(exo.id)	
+
+	formSignalerErreur = SignalerErreur({'idcopieerronee':copie.id})
+	return render(request, 'evoircopie.html', locals())

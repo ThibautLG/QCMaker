@@ -140,6 +140,7 @@ class CoreCopie(models.Model):
 	eleve = models.ForeignKey(Eleve)
 	qcmpdf = models.ForeignKey(CoreQcmPdf)
 	fichiers = models.CharField(max_length=1000,default="")
+	malcorrigee = models.BooleanField(default=0)
 	
 class CoreCopies(models.Model):
 	def renommage(instance, nom):
