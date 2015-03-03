@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<br><br>
+<h2> {{ infoscopie.nomcopie }} </h2>
+<br>
+Note: {{ infoscopie.note }}
+<br><br>
+		<center>
+	<form action="{% url 'prof.views.evoircopie' %}" method="post">
+		{% csrf_token %}
+		{{ formSignalerErreur }}
+		<input type="submit" value="Signaler une erreur de correction"/>
+	</form>
+	</center>
+	
+<br>
+{% for page in infoscopie.pages %}
+	<center>
+	<a href="{% url 'prof.views.image' infoscopie.id page %}">
+	<img src="{% url 'prof.views.image' infoscopie.id page %}" {% if infoscopie.malcorrigee %}style="width:528px;border-color:#FF0000" border=2px{% else %} style="width:528px" {% endif %}></a>
+	</center>
+{% endfor %}
+<hr width="75%" align="center"><br>
+<center>
+Corrections
+</center>
+{% for exosvg in exocopies %}
+<center>
+<img src="{% url 'prof.views.svg' exosvg '1' %}" style="width:728px">
+</center>
+{% endfor %}
+{% endblock %}
