@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<br><br>
+<h2> Copie de {{ infoscopie.nomeleve }} </h2>
+<br>
+Note: {{ infoscopie.note }}
+<br><br><br>
+{% for page in infoscopie.pages %}
+	<center>
+	<a href="{% url 'prof.views.image' infoscopie.id page %}">
+	<img src="{% url 'prof.views.image' infoscopie.id page %}" style="width:528px"></a>
+	</center>
+{% endfor %}
+	<form action="{% url 'prof.views.voircopie' %}" method="post">
+		<center>
+		{% csrf_token %}
+		{{ formChangerCases }}
+		<input type="submit" value="Valider"/>
+	</form>
+	
+{% endblock %}

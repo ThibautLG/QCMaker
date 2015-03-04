@@ -2,27 +2,7 @@
 
 
 {% block content %}
-{% if listecps %}
-<h2>Liste de vos notes:</h2>
-<table cellspacing="20%">
-<tr><td><h3>Nom du QCM</h3></td><td><h3>Note</h3></td></tr>
-{% for cp in listecps %}
-<tr><td>{{ cp.nom }}</td><td>{{ cp.note }}</td><td>
-<form action="{% url 'prof.views.ehome' %}" method="post">
-    {% csrf_token %}
-    {% if not cp.jpg %}{{ cp.formMI }}{% endif %}
-	<input type="submit" value="{% if cp.jpg %}Masquer copie{% else %}Voir copie{% endif %}" />
-</form></td></tr>
-<tr><td>
-	{% for cjpg in cp.jpg %}
-	<a href="{% url 'prof.views.image' cjpg %}">
-	<img src="{% url 'prof.views.image' cjpg %}" style="height:228px"></a>
-	{% endfor %}
-</tr></td>
-{% endfor %}
-</table>
-<br><br>
-{% endif %}
+<h2>Associer une copie </h2>
 <form action="{% url 'prof.views.ehome' %}" method="post">
     {% csrf_token %}
     {{ formAssign}} <input type="submit" value="Associer" />
@@ -39,5 +19,28 @@ Copie déjà assignée à un élève
 {% endif %}
 {% if err == '4' %}
 Vous avez déjà une copie assignée pour ce QCM.
+{% endif %}
+
+{% if listecps %}
+<hr width="75%" align="center">
+<h2>Liste de vos copies:</h2>
+<table cellspacing="20%">
+<tr><td><h3>Nom du QCM</h3></td><td><h3>Note</h3></td></tr>
+{% for cp in listecps %}
+<tr><td>{{ cp.nom }}</td><td>{{ cp.note }}</td><td>
+<form action="{% url 'prof.views.evoircopie' %}" method="post">
+    {% csrf_token %}
+	{{ cp.formvoir }}
+	<input type="submit" value="Voir copie" />
+</form>
+</td></tr>
+<tr><td>
+	{% for cjpg in cp.jpg %}
+	<a href="{% url 'prof.views.image' cjpg %}">
+	<img src="{% url 'prof.views.image' cjpg %}" style="height:228px"></a>
+	{% endfor %}
+</tr></td>
+{% endfor %}
+</table>
 {% endif %}
 {% endblock %}

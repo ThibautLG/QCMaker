@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+
+<br>
+<form action="{% url 'prof.views.makexo' %}" method="post">
+	<center>
+	{% csrf_token %}
+	{{ formMain.type }}
+	{{ formMain.idmainexo }}
+	<br>
+	<br>
+		{{ formMain.question }}
+		<br><br>
+		{{ formMain.corrige }}
+		<br><br>
+	<input type="submit" value="Valider" />
+	</center>
+	</form>
+	<br>
+	
+	<form action="{% url 'prof.views.makexo' %}" method="post">
+		<center>
+		{% csrf_token %}
+		{{ formAjouterReponse.nouvellereponse }}
+		{{ formAjouterReponse.reponse }}
+		<br><br>
+		{{ formAjouterReponse.nom }}
+		<input type="submit" value="Ajouter reponse"/>
+	</center>
+	</form>
+	{% if listereponses %}
+	Liste des réponses:<br><br>
+	{% for reponse in listereponses %}
+		{{ reponse.nom }}: {{ reponse.texte }} <br>	
+	{% endfor %}
+	{% endif %}
+	<br>
+	<h2>Prévisualisation</h2>
+	{% if errtex %}
+	<pre>
+{{ errtex }}
+	</pre>
+	{% endif %}
+	<img src="{% url 'prof.views.svg' exosvg '1' %}"  {% if errtex %}style="width:100%;border-color:#FF0000" border=2px{% else %} style="width:100%" {% endif %}>
+{% endblock %}

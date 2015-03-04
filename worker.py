@@ -20,7 +20,7 @@ def log(texte):
     return
 
 while True:
-    listjobs = [job for job in os.listdir(dossierbgjobs) if job.startswith("job")]
+    listjobs = [job for job in sorted(os.listdir(dossierbgjobs), key=lambda r: int(''.join(x for x in r if x.isdigit()))) if job.startswith("job")]
     if listjobs:
         log("Job(s) trouvé(s): "+str(listjobs))
     for job in listjobs:
