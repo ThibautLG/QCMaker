@@ -391,6 +391,7 @@ class Original(Copie):
 		method = eval(method)
 		self.res = cv2.matchTemplate(self.img[:,:dl],self.template,method)
 		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(self.res)
+		min_val = abs(min_val) #pour un bug qui peut mettre une valeur négative à min_val 
 		threshold = thresholdCoeff*min_val
 		loc = np.where( self.res <= threshold)
 		loc = zip(*loc[::-1])
