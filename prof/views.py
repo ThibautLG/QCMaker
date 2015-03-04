@@ -8,8 +8,6 @@ import mimetypes
 from django.core.servers.basehttp import FileWrapper
 from qcmaker import *
 import pickle
-import qcmimport as qcmi
-import qcmcorrecteur as qcmc
 from django.core.files import File
 import random
 from bgjob import BgJob
