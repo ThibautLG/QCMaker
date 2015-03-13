@@ -386,17 +386,26 @@ class Original(Copie):
 		self.dimCV = self.template.shape[::-1]
 		w,h = self.dimCV
 		
-		thresholdCoeff = 800
+		hardthreshold = 0.0001
 		method = 'cv2.TM_SQDIFF_NORMED'		
 		method = eval(method)
 		self.res = cv2.matchTemplate(self.img[:,:dl],self.template,method)
-		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(self.res)
-		min_val = abs(min_val) #pour un bug qui peut mettre une valeur négative à min_val 
-		threshold = thresholdCoeff*min_val
-		loc = np.where( self.res <= threshold)
+		loc = np.where( self.res <= hardthreshold)
 		loc = zip(*loc[::-1])
 		n=len(loc)
-		
+		#if n>0:
+			#loc.sort(key=lambda x: x[0])
+			
+		##on supprime s'il y a des doublons
+		#aSupprimer=list()
+		#for i in range(n):
+			#for j in range(i+1,n):
+				#if abs(loc[j][0]-loc[i][0])<w and j not in aSupprimer and i not in aSupprimer:
+					#aSupprimer.append(j)
+		#aSupprimer.sort(reverse=True)
+		#for j in aSupprimer:
+			#del loc[j]
+			
 		
 		#trop de cases pour être des cases
 		if n>100:
