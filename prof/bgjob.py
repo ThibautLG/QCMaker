@@ -14,7 +14,4 @@ class BgJob():
 	n=max(map(intify,listefichier))+1
 	print('what? bg job')
         with open(dossierbgjobs+"job"+str(n),'w') as f:
-            pickle.dump([fonction,arguments], f)
-
-#	with open(conf.pickle, 'w') as f:
-#			originaux += pickle.load(f)	
+		pickle.dump([fonction,arguments], f)

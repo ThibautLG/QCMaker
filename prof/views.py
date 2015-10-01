@@ -12,8 +12,7 @@ from django.core.files import File
 import random
 from bgjob import BgJob
 import prof.core as core
-#from django_rq import job
-
+import prof.imp as imp
 
 
 def is_prof(nom):
@@ -520,6 +519,8 @@ def banque(request):
 	if request.method == 'POST':
 		formAjouterExo = MakexoAjouterExo(request.POST) 
 		formModifierExo = MakexoModifierExo(request.POST)
+		formEffacerExo = EffacerExo(request.POST)
+		formUploadExos = UploadExos(request.POST,request.FILES)
 		if formAjouterExo.is_valid():
 			nouvelexo = CoreExo(banque=banque)
 			nouvelexo.save()
@@ -529,16 +530,35 @@ def banque(request):
 		elif formModifierExo.is_valid():
 			request.session['makexo']=formModifierExo.cleaned_data['idexo']
 			return redirect('prof.views.makexo')
+		#si upload d'exos
+		elif formUploadExos.is_valid():
+			up=CoreUpload(fichier=formUploadExos.cleaned_data['fichierexos'])
+			up.save()
+			try:
+				BgJob(imp.LectureExos,(up.fichier.path,banque.id,dossier))
+			except Exception, er:
+				print("Erreur : ",er)
+		elif formEffacerExo.is_valid():
+			try:
+				exoaeff = CoreExo.objects.get(id=formEffacerExo.cleaned_data['exoaeff'])
+				exoaeff.delete()
+			except:
+				pass
+		
+
 	
 	listeexos = list()
 	for exo in banque.coreexo_set.all():
 		formModifierExo = MakexoModifierExo()
 		formModifierExo.setId(exo.id)
-		listeexos.append({'id':exo.id,'form':formModifierExo,'err':exo.erreurtex})
+		formEffacerExo=EffacerExo(initial={'exoaeff':exo.id})
+		listeexos.append({'id':exo.id,'form':formModifierExo,'err':exo.erreurtex,'formDel':formEffacerExo})
+		
 	nbexos = len(listeexos)
 
 	formAjouterExo = MakexoAjouterExo()
 	formModifierExo = MakexoModifierExo()
+	formUploadExos = UploadExos()
 	return render(request, 'banque.html', locals())
 
 def voircopie(request):

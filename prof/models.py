@@ -19,13 +19,13 @@ class CoreBanque(models.Model):
 class CoreQcm(models.Model):
 	prof = models.ForeignKey(Enseignant)
 	nom = models.CharField(max_length=200)
-	nomTeX = models.CharField(max_length=200,default="Matière - 2014/2015")
-	texteTeX = models.CharField(max_length=2000,default="\\centerline{Durée 30 minutes}\n\\medskip \n{\\it \n\\noindent\\underline{La correction est automatisée, {\\bf noircir}  les cases des réponses justes et laisser vides les autres cases.} \\\ \nAucun document autorisé, téléphones portables et calculatrices interdits.\\\ \nUn seule réponse juste par exercice. \\\ \nBarème: réponse juste = 1pt, réponse fausse  = -0.5pt \n}")
+	nomTeX = models.CharField(max_length=200,default=u"Matière - 2014/2015")
+	texteTeX = models.CharField(max_length=2000,default=u"\\centerline{Durée 30 minutes}\n\\medskip \n{\\it \n\\noindent\\underline{La correction est automatisée, {\\bf noircir}  les cases des réponses justes et laisser vides les autres cases.} \\\ \nAucun document autorisé, téléphones portables et calculatrices interdits.\\\ \nUn seule réponse juste par exercice. \\\ \nBarème: réponse juste = 1pt, réponse fausse  = -0.5pt \n}")
 	nbexos = models.ManyToManyField(CoreBanque, through='CoreNbExos')
 	erreurtex =  models.BooleanField(default=True)
 	generation = models.IntegerField(default=0)
 	nmax = models.IntegerField(default=0)
-	formule = models.CharField(max_length=200,default='(v+f==1)*(1*v-0.5*f)')
+	formule = models.CharField(max_length=200,default=u'(v+f==1)*(1*v-0.5*f)')
 
 
 class CoreNbExos(models.Model):
@@ -38,8 +38,8 @@ class CoreExo(models.Model):
 	def reponses(self):
 		return sorted(self.corereponse_set.all(), key=lambda r: int(r.position))
 
-	question = models.CharField(max_length=2000, default="En quoi l'escalade est un super sport?")
-	corrige = models.CharField(max_length=2000, default="Parce qu'il n'y a pas mieux!\n\\[\n\\int_0^\\infty e^{-x}dx = 1 \n\\]" )
+	question = models.CharField(max_length=2000, default=u"En quoi l'escalade est un super sport?")
+	corrige = models.CharField(max_length=2000, default=u"Parce qu'il n'y a pas mieux!\n\\[\n\\int_0^\\infty e^{-x}dx = 1 \n\\]" )
 	type = models.CharField(max_length=200)
 	banque = models.ForeignKey(CoreBanque)
 	erreurtex = models.BooleanField(default=True)
@@ -150,6 +150,8 @@ class CoreCopies(models.Model):
 	corrigees = models.BooleanField(default=0)
 	nom = models.CharField(max_length=200)
 
+class CoreUpload(models.Model):
+	fichier = models.FileField()
 
 
 

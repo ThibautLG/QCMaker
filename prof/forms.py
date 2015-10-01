@@ -27,6 +27,9 @@ class MakexoMain(forms.Form):
 	corrige = forms.CharField(required=False)
 	type = forms.ChoiceField(label="Type de correction",choices=[('1','Une seule réponse possible')])
 
+class UploadExos(forms.Form):
+	fichierexos = forms.FileField(label="Charger un fichier .exos")
+	
 class MakexoAjouterReponse(forms.Form):
 	
 	nouvellereponse = forms.BooleanField(widget=forms.HiddenInput(),initial=True)
@@ -60,6 +63,9 @@ class ChoixBanqueQCM(forms.Form):
 
 class EffacerBanque(forms.Form):
 	banqueaeff = forms.IntegerField(widget=forms.HiddenInput())
+
+class EffacerExo(forms.Form):
+	exoaeff = forms.IntegerField(widget=forms.HiddenInput())
 
 class Entete(forms.Form):
 	def setFields(self,qcm):
