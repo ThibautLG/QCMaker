@@ -78,7 +78,7 @@ class LectureExos():
 				newExo.save()
 
 			elif nq==2:						#si on est en train de lire une correction
-				newExo.correction+=self.exosBrut[i]		#on l'ajoute
+				newExo.corrige+=self.exosBrut[i]		#on l'ajoute
 				newExo.save()
 		
 		if nq!=-1:				#si il y a eu au moins un exo, on check le tex, et on l'enregistre

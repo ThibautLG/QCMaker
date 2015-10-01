@@ -11,11 +11,15 @@
 	</form>
 
 	<hr width="25%" align="center">
-
+<br>
 <form action="{% url 'prof.views.banque' %}" method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    {{ formUploadExos}}<input type="submit" value="Ajouter" />
+    {{ formUploadExos}}
+	<spacer type=vertical size=200>
+<input type="submit" value="Ajouter" />
 </form>
+<br><br>
+<br><br>
 	<hr width="75%" align="center">
 </div>
 	{% for exo in listeexos %}
@@ -24,11 +28,21 @@
 		<img src="{% url 'prof.views.svg' exo.id '1' %}" {% if exo.err %}style="width:99%;border-color:#FF0000" border=2px{% endif %}>
 	</div>
 	<div style="text-align: center;" >
+<table style="margin-left: auto; margin-right: auto;">
+		<td>
+		<form action="{% url 'prof.views.banque' %}" method="post">
+		{% csrf_token %}
+		{{ exo.formDel }}
+		<input type="submit" value="Effacer"/>
+		</form>
+</td><td>
 		<form action="{% url 'prof.views.banque' %}" method="post">
 		{% csrf_token %}
 		{{ exo.form }}
-		<input type="submit" value="Modifier exercice"/>
-	</form>
-</div>
+		<input type="submit" value="Modifier"/>
+		</form>
+</td>
+</table>
+	</div>
 	{% endfor %}
 {% endblock %}

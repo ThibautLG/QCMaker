@@ -64,6 +64,9 @@ class ChoixBanqueQCM(forms.Form):
 class EffacerBanque(forms.Form):
 	banqueaeff = forms.IntegerField(widget=forms.HiddenInput())
 
+class EffacerExo(forms.Form):
+	exoaeff = forms.IntegerField(widget=forms.HiddenInput())
+
 class Entete(forms.Form):
 	def setFields(self,qcm):
 		self.fields['nomTeX'] = forms.CharField(max_length=100,label="",initial=qcm.nomTeX)

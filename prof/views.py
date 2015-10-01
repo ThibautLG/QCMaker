@@ -519,6 +519,7 @@ def banque(request):
 	if request.method == 'POST':
 		formAjouterExo = MakexoAjouterExo(request.POST) 
 		formModifierExo = MakexoModifierExo(request.POST)
+		formEffacerExo = EffacerExo(request.POST)
 		formUploadExos = UploadExos(request.POST,request.FILES)
 		if formAjouterExo.is_valid():
 			nouvelexo = CoreExo(banque=banque)
@@ -537,6 +538,12 @@ def banque(request):
 				BgJob(imp.LectureExos,(up.fichier.path,banque.id,dossier))
 			except Exception, er:
 				print("Erreur : ",er)
+		elif formEffacerExo.is_valid():
+			try:
+				exoaeff = CoreExo.objects.get(id=formEffacerExo.cleaned_data['exoaeff'])
+				exoaeff.delete()
+			except:
+				pass
 		
 
 	
@@ -544,7 +551,9 @@ def banque(request):
 	for exo in banque.coreexo_set.all():
 		formModifierExo = MakexoModifierExo()
 		formModifierExo.setId(exo.id)
-		listeexos.append({'id':exo.id,'form':formModifierExo,'err':exo.erreurtex})
+		formEffacerExo=EffacerExo(initial={'exoaeff':exo.id})
+		listeexos.append({'id':exo.id,'form':formModifierExo,'err':exo.erreurtex,'formDel':formEffacerExo})
+		
 	nbexos = len(listeexos)
 
 	formAjouterExo = MakexoAjouterExo()
