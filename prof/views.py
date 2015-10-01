@@ -12,8 +12,7 @@ from django.core.files import File
 import random
 from bgjob import BgJob
 import prof.core as core
-#from django_rq import job
-
+import prof.imp as imp
 
 
 def is_prof(nom):
@@ -520,6 +519,7 @@ def banque(request):
 	if request.method == 'POST':
 		formAjouterExo = MakexoAjouterExo(request.POST) 
 		formModifierExo = MakexoModifierExo(request.POST)
+		formUploadExos = UploadExos(request.POST,request.FILES)
 		if formAjouterExo.is_valid():
 			nouvelexo = CoreExo(banque=banque)
 			nouvelexo.save()
@@ -529,6 +529,16 @@ def banque(request):
 		elif formModifierExo.is_valid():
 			request.session['makexo']=formModifierExo.cleaned_data['idexo']
 			return redirect('prof.views.makexo')
+		#si upload d'exos
+		elif formUploadExos.is_valid():
+			up=CoreUpload(fichier=formUploadExos.cleaned_data['fichierexos'])
+			up.save()
+			try:
+				BgJob(imp.LectureExos,(up.fichier.path,banque.id,dossier))
+			except Exception, er:
+				print("Erreur : ",er)
+		
+
 	
 	listeexos = list()
 	for exo in banque.coreexo_set.all():
@@ -539,6 +549,7 @@ def banque(request):
 
 	formAjouterExo = MakexoAjouterExo()
 	formModifierExo = MakexoModifierExo()
+	formUploadExos = UploadExos()
 	return render(request, 'banque.html', locals())
 
 def voircopie(request):

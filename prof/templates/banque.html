@@ -10,6 +10,13 @@
 		<input type="submit" value="Ajouter exercice"/>
 	</form>
 
+	<hr width="25%" align="center">
+
+<form action="{% url 'prof.views.banque' %}" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ formUploadExos}}<input type="submit" value="Ajouter" />
+</form>
+	<hr width="75%" align="center">
 </div>
 	{% for exo in listeexos %}
 	<hr width="75%" align="center">

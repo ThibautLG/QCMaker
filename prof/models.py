@@ -150,6 +150,8 @@ class CoreCopies(models.Model):
 	corrigees = models.BooleanField(default=0)
 	nom = models.CharField(max_length=200)
 
+class CoreUpload(models.Model):
+	fichier = models.FileField()
 
 
 
