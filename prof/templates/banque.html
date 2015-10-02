@@ -46,4 +46,16 @@
 </table>
 	</div>
 	{% endfor %}
+{% if not exo %}
+	<hr width="75%" align="center">
+<div style="text-align: center;" >
+<table style="margin-left: auto; margin-right: auto;">
+<form action="{% url 'prof.views.home' %}" method="post">
+	{% csrf_token %}
+		{{ formEffacerBanque }}
+<tr><th></th><td>	<input type="submit" id="Effacer" value="Effacer la banque"/> </td></tr>
+</form>
+</table>
+</div>
+{% endif %}
 {% endblock %}

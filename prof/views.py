@@ -174,6 +174,7 @@ def home(request):
 	formNouvelleBanque = AjouterBanque(request.POST)
 	formBanque = ChoixBanque(request.POST)
 	formEffacerQCM = EffacerQCM(request.POST)
+	formEffacerBanque = EffacerBanque(request.POST)
 	listebanquestemp=pr.corebanque_set.all()
 	listebanques=list()
 	for banq in listebanquestemp:
@@ -182,7 +183,7 @@ def home(request):
 		
 	if request.method == 'POST':
 		if formBanque.is_valid():
-			print('ok')
+			print('ok?')
 			request.session['banque'] = formBanque.cleaned_data['banque']
 			return redirect('prof.views.banque')
 		elif formNouvelleBanque.is_valid():
@@ -207,6 +208,17 @@ def home(request):
 					print("Erreur : ",er)
 			else:
 				return redirect('prof.views.qcmaker')	
+		elif formEffacerBanque.is_valid():
+			print('banqueaeff')
+			try:
+				banqueaeff = CoreBanque.objects.get(id=formEffacerBanque.cleaned_data['banqueaeff'])
+				print(banqueaeff)
+				if not banqueaeff.coreexo_set.all():
+					print("on effffaaaaaaaaace")
+					banqueaeff.delete()
+			except Exception, er:
+				print("Erreur : ",er)
+			
 
 	formNQCM = NouveauQCM()
 	formBanque = ChoixBanque()
@@ -587,6 +599,7 @@ def banque(request):
 	formAjouterExo = MakexoAjouterExo()
 	formModifierExo = MakexoModifierExo()
 	formUploadExos = UploadExos()
+	formEffacerBanque = EffacerBanque(initial={'banqueaeff':banque.id})
 	return render(request, 'banque.html', locals())
 
 def voircopie(request):
