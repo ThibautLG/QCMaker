@@ -44,4 +44,16 @@
 <hr width="75%" align="center"><br>
 <h2>Aperçu de l'entete<br></h2>
 <img src="{% url 'prof.views.svg' qcm.id '2' %}"  {% if errtex %}style="width:100%;border-color:#FF0000" border=2px{% else %} style="width:100%" {% endif %}>
+
+<hr width="75%" align="center"><br>
+<div style="text-align: center;" >
+<table style="margin-left: auto; margin-right: auto;">
+<form action="{% url 'prof.views.home' %}" method="post">
+	{% csrf_token %}
+	{{ formEffacerQCM }}
+<tr><th></th><td>	<input type="submit" id="Effacer" value="Effacer le QCM"/> </td></tr>
+</form>
+</table>
+</div>
+		
 {% endblock %}

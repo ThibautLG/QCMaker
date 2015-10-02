@@ -29,19 +29,20 @@
 	</div>
 	<div style="text-align: center;" >
 <table style="margin-left: auto; margin-right: auto;">
-		<td>
-		<form action="{% url 'prof.views.banque' %}" method="post">
-		{% csrf_token %}
-		{{ exo.formDel }}
-		<input type="submit" value="Effacer"/>
-		</form>
-</td><td>
-		<form action="{% url 'prof.views.banque' %}" method="post">
+		<td>	<form action="{% url 'prof.views.banque' %}" method="post">
 		{% csrf_token %}
 		{{ exo.form }}
 		<input type="submit" value="Modifier"/>
 		</form>
-</td>
+</td><td>
+		{% if exo.formDel %}
+		<form action="{% url 'prof.views.banque' %}" method="post">
+		{% csrf_token %}
+		{{ exo.formDel }}
+		<input type="submit" id='Effacer' value="Effacer"/>
+		</form>
+		{% endif %}
+	</td>
 </table>
 	</div>
 	{% endfor %}

@@ -67,6 +67,10 @@ class EffacerBanque(forms.Form):
 class EffacerExo(forms.Form):
 	exoaeff = forms.IntegerField(widget=forms.HiddenInput())
 
+class EffacerQCM(forms.Form):
+	qcmaeff = forms.IntegerField(widget=forms.HiddenInput())
+	warning = forms.ChoiceField(label="",choices=((0,"Attention, toutes les données du QCM seront perdues!"),(1,"Oui, je veux tout effacer")))
+
 class Entete(forms.Form):
 	def setFields(self,qcm):
 		self.fields['nomTeX'] = forms.CharField(max_length=100,label="",initial=qcm.nomTeX)

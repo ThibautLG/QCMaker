@@ -170,8 +170,10 @@ def home(request):
 		except:
 			print('Erreur lors de la création du nouveau dossier prof')
 
+	dossier = 'media/ups/'+str(pr.id)
 	formNouvelleBanque = AjouterBanque(request.POST)
 	formBanque = ChoixBanque(request.POST)
+	formEffacerQCM = EffacerQCM(request.POST)
 	listebanquestemp=pr.corebanque_set.all()
 	listebanques=list()
 	for banq in listebanquestemp:
@@ -189,6 +191,22 @@ def home(request):
 			banque.save()
 			request.session['banque'] = banque.id
 			return redirect('prof.views.banque')
+		elif formEffacerQCM.is_valid():
+			print(formEffacerQCM.cleaned_data)
+			if formEffacerQCM.cleaned_data['warning']=="1":
+				try:
+					qcmaeff = CoreQcm.objects.get(id=formEffacerQCM.cleaned_data['qcmaeff'])
+					print("On effaaaaace")
+					try:
+   	 					os.remove(dossier+'/qcm-prev-'+str(qcmaeff.id)+'.svg')
+						shutil.rmtree(dossier+'/'+str(qcmaeff.id))
+					except:
+						pass
+					qcmaeff.delete()
+				except Exception, er:
+					print("Erreur : ",er)
+			else:
+				return redirect('prof.views.qcmaker')	
 
 	formNQCM = NouveauQCM()
 	formBanque = ChoixBanque()
@@ -344,6 +362,7 @@ def qcmaker(request):
 		listebanquesqcm.append({'nom':nb.banque.nom,'nb':nb.nb,'formDel':tform})
 	formNEntete = Entete()
 	formNEntete.setFields(qcm)
+	formEffacerQCM=EffacerQCM(initial={'qcmaeff':qcm.id})
 	try:
 		formGenerer.erreurici
 	except Exception,er:
@@ -431,6 +450,7 @@ def qcmanage(request):
 	importpdfini = qcm.generation==3
 	formGenNotes = TelechargerNotes()
 	formAjoutCopies = AjoutCopies()
+	formEffacerQCM=EffacerQCM(initial={'qcmaeff':qcm.id})
 					
 	return render(request, 'qcmanage.html', locals())
 
@@ -541,6 +561,10 @@ def banque(request):
 		elif formEffacerExo.is_valid():
 			try:
 				exoaeff = CoreExo.objects.get(id=formEffacerExo.cleaned_data['exoaeff'])
+   	 			os.remove(dossier+'/exo-'+str(exoaeff.id)+'.svg')
+			except:
+				pass
+			try:
 				exoaeff.delete()
 			except:
 				pass
@@ -551,8 +575,12 @@ def banque(request):
 	for exo in banque.coreexo_set.all():
 		formModifierExo = MakexoModifierExo()
 		formModifierExo.setId(exo.id)
-		formEffacerExo=EffacerExo(initial={'exoaeff':exo.id})
-		listeexos.append({'id':exo.id,'form':formModifierExo,'err':exo.erreurtex,'formDel':formEffacerExo})
+		if not CoreExoQcmPdf.objects.filter(exo=exo):
+			formEffacerExo=EffacerExo(initial={'exoaeff':exo.id})
+			listeexos.append({'id':exo.id,'form':formModifierExo,'err':exo.erreurtex,'formDel':formEffacerExo})
+		else:
+			listeexos.append({'id':exo.id,'form':formModifierExo,'err':exo.erreurtex})
+			
 		
 	nbexos = len(listeexos)
 

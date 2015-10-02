@@ -96,6 +96,14 @@ Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} cor
 {% endfor %}
 </table>
 {% endif %}
-
-
+<hr width="75%" align="center"><br>
+<div style="text-align: center;" >
+<table style="margin-left: auto; margin-right: auto;">
+<form action="{% url 'prof.views.home' %}" method="post">
+	{% csrf_token %}
+	{{ formEffacerQCM }}
+<tr><th></th><td>	<input type="submit" id="Effacer" value="Effacer le QCM"/> </td></tr>
+</form>
+</table>
+</div>
 {% endblock %}
