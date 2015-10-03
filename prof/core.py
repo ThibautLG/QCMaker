@@ -154,7 +154,7 @@ def genererSvgQcm(qcm,dossier):
 
     with codecs.open(dossier+'/qcm-prev-'+str(qcm.id)+'.tex','w','utf-8') as f:
 	for ligne in genererTeXQcmPreview(qcm,'template.tex'):
-	    f.write(ligne.decode())
+		f.write(ligne)
     try:
 	 sp.check_output(['pdflatex','-output-directory',dossier,dossier+'/qcm-prev-'+str(qcm.id)+'.tex'])
 	 sp.call(['pdftocairo','-svg','-l','1',dossier+'/qcm-prev-'+str(qcm.id)+'.pdf',dossier+'/qcm-prev-'+str(qcm.id)+'.svg'])
