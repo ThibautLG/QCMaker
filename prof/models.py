@@ -74,7 +74,7 @@ class CoreQcmPdf(models.Model):
 				irep+=1
 			note += (nbreponses['v']+nbreponses['f']==1)*(1*nbreponses['v']-0.5*nbreponses['f'])
 			nbreponses = {}
-		return max(note,0)
+		return max(min(note*5,20),0)
 	def getreponses(self):
 		irep = 0
 		listereponses = list()

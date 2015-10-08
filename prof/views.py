@@ -459,7 +459,8 @@ def qcmanage(request):
 	#le worker marche encore, création des pdfs
 	encours = qcm.generation<2
 	#le worker marche encore, import des pdfs
-	importpdfini = qcm.generation==3
+	importpdfini = qcm.generation>=3
+	erreurimportpdf = qcm.generation==4
 	formGenNotes = TelechargerNotes()
 	formAjoutCopies = AjoutCopies()
 	formEffacerQCM=EffacerQCM(initial={'qcmaeff':qcm.id})

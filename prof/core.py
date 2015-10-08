@@ -489,7 +489,6 @@ def importOriginal(qcm,fichier,dossier):
 		print(qcmpdf.positionspts)
 		qcmpdf.save()
 		os.remove(dossier+"/"+listeoriginaux[i])
-	
 
 def importOriginaux(idqcm):
 	qcm=CoreQcm.objects.get(id=idqcm)
@@ -500,6 +499,13 @@ def importOriginaux(idqcm):
 	for fichier in [x for x in os.listdir(dossier+"originaux") if x.endswith('.pdf')]:
 		importOriginal(qcm,dossier+'originaux/'+fichier,dossier+'originaux')
 	qcm.generation = 3
+	for qcmpdf in CoreQcmPdf.objects.filter(qcm=qcm):
+		nbreptemp = 0
+		for e in qcmpdf.exos.all():
+			nbreptemp += len(e.corereponse_set.all())
+		if len(qcmpdf.positionscases.split(';')) != nbreptemp+1:
+			qcm.generation = 4
+			print("wow!!!",qcmpdf.positionscases.split(';')[:-1],nbreptemp)
 	qcm.save()
 
 

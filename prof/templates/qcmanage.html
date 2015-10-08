@@ -10,6 +10,7 @@
 
 {% block content %}
 <br><br>
+{% if not erreurimportpdf %}
 {% if listecps %}
 <center>
 <form action="{% url 'prof.views.qcmanage' %}" method="post">
@@ -95,6 +96,9 @@ Il y a <b>{{ nbcopiescorrigees }}</b> copie{{ nbcopiescorrigees|pluralize }} cor
 {% endif %}
 {% endfor %}
 </table>
+{% endif %}
+{% else %}
+<h2> ERREUR LORS DE LA PREPARATION DES QCM, VEUILLEZ SUPPRIMER CE QCM </h2>
 {% endif %}
 <hr width="75%" align="center"><br>
 <div style="text-align: center;" >
