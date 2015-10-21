@@ -125,11 +125,11 @@ class CoreCopie(models.Model):
 	def setimage(self):
 		w,h = 21,21
 		reponses = self.qcmpdf.reponses
-		for page in [i+1 for i in range(self.qcmpdf.pages)]:
+		i = 0
+		for page in [j+1 for j in range(self.qcmpdf.pages)]:
 			cases = self.qcmpdf.getcases(page)
 			imgFichier = self.getpage(page)[:-13]+'.jpg'
 			img = cv2.imread(imgFichier,1)
-			i = 0
 			for pt in cases:
 				print(pt,i)
 				if reponses[i]=='1':

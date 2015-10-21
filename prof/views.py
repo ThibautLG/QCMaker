@@ -131,21 +131,21 @@ def ehome(request):
 				numcopie = codes.index(numcopie)
 				qcm = CoreQcm.objects.get(id=qcmid)
 				qcmpdf = CoreQcmPdf.objects.get(qcm=qcm,numero=numcopie)
+				try:
+					if not [cc for cc in el.corecopie_set.all() if cc.qcmpdf.qcm==qcm]:
+						cp=CoreCopie.objects.get(qcmpdf=qcmpdf)
+						if cp.eleve==Eleve.objects.get(nom="Élève non associé"):
+							cp.eleve=el
+							cp.save()
+						else:
+							err='3'
+					else:
+						err='4'
+				except Exception, er:
+					print("Erreur : ",er)
+					err='2'
 			except:
 				err='1'
-			try:
-				if not [cc for cc in el.corecopie_set.all() if cc.qcmpdf.qcm==qcm]:
-					cp=CoreCopie.objects.get(qcmpdf=qcmpdf)
-					if cp.eleve==Eleve.objects.get(nom="Élève non associé"):
-						cp.eleve=el
-						cp.save()
-					else:
-						err='3'
-				else:
-					err='4'
-			except Exception, er:
-				print("Erreur : ",er)
-				err='2'
 
 	#creation de la liste des copies de l'élève
 	listecps  = list()
