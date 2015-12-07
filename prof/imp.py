@@ -27,7 +27,7 @@ class LectureExos():
 		fichierExos=args[0]
 		banque=args[1]
 		dossier=args[2]
-		self.sepQCM="@@@QCM\n"
+		self.sepQCM="@@@QCM"
 		self.sepCorr="@@@Correction\n"
 		self.sepNote="@"
 		self.banque=CoreBanque.objects.get(id=banque)
@@ -47,7 +47,7 @@ class LectureExos():
 	def genererExos(self):
 		nq=-1
 		for i in range(len(self.exosBrut)):
-			if self.exosBrut[i]==self.sepQCM:		#si on a un séparateur d'exo, on créé une nouvelle instance de class exo
+			if self.exosBrut[i].startswith(self.sepQCM):		#si on a un séparateur d'exo, on créé une nouvelle instance de class exo
 				if nq!=-1:				#si on termine un autre exo, on check le tex, et on l'enregistre
 					errtex = core.genererSvg(newExo,self.dossier)
 					if not errtex == 0:
