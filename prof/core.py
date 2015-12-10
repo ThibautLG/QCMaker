@@ -31,7 +31,7 @@ caseVide = "case_vide.jpg"
 dimCaseVide = cv2.imread(caseVide,0).shape[::-1]
 sep=cv2.imread("sep.jpg",0)
 pts=[cv2.imread("pt1.jpg",0),cv2.imread("pt2.jpg",0),cv2.imread("pt3.jpg",0),]
-zones=[[(1000,1700),(0,400)],[(1300,1700),(2100,2400)],[(0,400),(2100,2300)]]
+zones=[[(1000,1700),(0,400)],[(1300,1700),(1900,2400)],[(0,400),(1900,2300)]]
 thresholdCaseCode=0.75
 thresholdCase=0.5 #0.75
 dl=600
@@ -337,8 +337,7 @@ class Copie():
 		
 	#recherche le séparateur entre le code en 01010 et celui d'avant. Utilisé pour trouver l'image du code
 	def trouverSep(self):
-		
-		method = 'cv2.TM_SQDIFF_NORMED'
+		method = 'cv2.TM_CCOEFF_NORMED'	
 		method = eval(method)
 		
 		template = sep
@@ -346,7 +345,7 @@ class Copie():
 		
 		res = cv2.matchTemplate(self.img,template,method)
 		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-		loc = np.where( res <= min_val)
+		loc = np.where( res >= max_val)
 		loc = zip(*loc[::-1])
 		return loc[0]
 	
