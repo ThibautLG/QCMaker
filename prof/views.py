@@ -25,11 +25,11 @@ def is_prof(nom):
 
 def genererCSVnotes(qcm):
 	dossier="media/ups/"+str(qcm.prof.id)+"/"+str(qcm.id)+"/"  
-	codes=range(100000)
-	random.seed(float('0.'+str(qcm.id)))  	# Ces quatres lignes donnent un ensemble de codes liés à la qcm.  
+	codes=range(100000)			# Ces cinq lignes donnent un ensemble des codes liés à la qcm.  
+	random.seed(float('0.'+str(qcm.id)))  	
 	random.shuffle(codes)			# à faire : Peut-être à remplacer par une fonction.
 	random.shuffle(codes)			# Je vous enverrai une proposition pour une fonction. 
-	random.shuffle(codes)
+	random.shuffle(codes)			# à faire: Quel est l'intérêt de cette manip? C'est un verouillement?
 	listecopies=[qcmpdf for qcmpdf in qcm.coreqcmpdf_set.all() if qcmpdf.reponses != ""]
 	fichierCSV=io.FileIO(dossier+"notes.csv",'w')
 	for qcmpdf in listecopies:
@@ -126,7 +126,7 @@ def image(request,id_cc,page):
 			return HttpResponse("Non disponible")
 	
 	
-def ehome(request):
+def ehome(request):	# La page d'accueil pour les élèves. à faire essayer de comprendre ce qu'il fait de concret.
 	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
@@ -139,16 +139,16 @@ def ehome(request):
 				qcmid,numcopie=formAssign.cleaned_data['numcopie'].split('-')
 				qcmid=int(qcmid)
 				numcopie=int(numcopie)
-				codes=range(100000)
-				random.seed(float('0.'+str(qcmid)))
-				random.shuffle(codes)
+				codes=range(100000)			# encore ces cinq lignes décrites au début.
+				random.seed(float('0.'+str(qcmid)))	
+				random.shuffle(codes)		
 				random.shuffle(codes)
 				random.shuffle(codes)
 				numcopie = codes.index(numcopie)
 				qcm = CoreQcm.objects.get(id=qcmid)
 				qcmpdf = CoreQcmPdf.objects.get(qcm=qcm,numero=numcopie)
 			except:
-				err='1'
+				err='1'		# erreur1 veut dire que 
 			try:
 				if not [cc for cc in el.corecopie_set.all() if cc.qcmpdf.qcm==qcm]:
 					cp=CoreCopie.objects.get(qcmpdf=qcmpdf)
