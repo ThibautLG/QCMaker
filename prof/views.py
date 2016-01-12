@@ -66,23 +66,31 @@ def svg(request,id_svg, prefix):
 		prefix = "qcm-prev"
 	try:
 		try:
+			# D'abord on essaie de traiter l'utilisateur en admettant que ce soit un enseignant.
 			pr = Enseignant.objects.get(nom=nom)
 			svg = "media/ups/"+str(pr.id)+"/"+prefix+"-"+str(id_svg)+".svg"
 		except:
-			try:
+			try:	
+				# En cas d'échec on essaie de le traiter comme un élève.
 				el = Eleve.objects.get(nom=nom)
 				exo = CoreExo.objects.get(id=int(id_svg))
 				ok = False
-				for copie in el.corecopie_set.all():
+				for copie in el.corecopie_set.all():	# parcours des copies de l'élève reconnu.
+				# si l'exo que l'élève veut voir fait l'objet d'une QCM qu'il a rempli, OK
 					if exo in copie.qcmpdf.exos.all():
 						ok = True
 				if ok:
 					svg = "media/ups/"+str(exo.banque.prof.id)+"/"+prefix+"-"+str(id_svg)+".svg"
 			except Exception,er:
-				print('Erreur svg: '+str(er))
-				return HttpResponse("Non disponible")
+				print('Erreur svg: '+str(er))  # à faire: qu'est-ce que l'utilisateur voit de cq?
+				return HttpResponse("Non disponible") # se qui s'affiche pour l'utilisateur
+				
+				
 		return telecharger(request,svg)
+		# "return" ci-dessus atteint si l'utilisateur est reconnu en tant qu'élève ayant le droit de voir l'exo.
 	except Exception, er:
+		# si telecharger(request,svg) échoue l'utilisateur est mis au courant.
+		# à faire: C'est le seul cas ou on entre dans cet "except"?
 		print("Erreur : ",er)
 		return HttpResponse("Non disponible")
 	
