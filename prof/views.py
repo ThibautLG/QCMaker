@@ -158,7 +158,7 @@ def ehome(request):	# La page d'accueil pour les élèves. à faire essayer de c
 					else:
 						err='3' 	# veut dire "copie déjà assignée à un autre élève."
 				else:
-					err='4'	#  veut dire "Vous avez déjà ."	
+					err='4'	#  veut dire "Vous avez déjà une copie assignée pour ce QCM."	
 			except Exception, er:
 				print("Erreur : ",er)
 				err='2'
