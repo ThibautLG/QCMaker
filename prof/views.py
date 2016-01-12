@@ -27,8 +27,8 @@ def genererCSVnotes(qcm):
 	dossier="media/ups/"+str(qcm.prof.id)+"/"+str(qcm.id)+"/"  
 	codes=range(100000)
 	random.seed(float('0.'+str(qcm.id)))  	# Ces quatres lignes donnent un ensemble de codes liés à la qcm.  
-	random.shuffle(codes)
-	random.shuffle(codes)
+	random.shuffle(codes)			# à faire : Peut-être à remplacer par une fonction.
+	random.shuffle(codes)			# Je vous enverrai une proposition pour une fonction. 
 	random.shuffle(codes)
 	listecopies=[qcmpdf for qcmpdf in qcm.coreqcmpdf_set.all() if qcmpdf.reponses != ""]
 	fichierCSV=io.FileIO(dossier+"notes.csv",'w')
@@ -39,8 +39,8 @@ def genererCSVnotes(qcm):
 	return str(dossier+"notes.csv")
 	
 def telecharger(request,objet):
-	if isinstance(objet,models.FileField):
-		the_file = objet.path
+	if isinstance(objet,models.FileField):  # Fait en sorte que la fonction puisse gérer trois types.
+		the_file = objet.path		# un fichier comme attribut, et deux types de chaînes.
 	elif isinstance(objet,str):
 		the_file = objet
 	elif isinstance(objet,unicode):
@@ -48,6 +48,8 @@ def telecharger(request,objet):
 	filename = os.path.basename(the_file)
 	response = HttpResponse(FileWrapper(open(the_file)),
 				content_type=mimetypes.guess_type(the_file)[0])
+	# Une des bibliothèques de la réponse accueille deux objets de plus:
+	# à faire: essayer de comprendre qu'est-ce que l'utilisateur en peut voir.
 	response['Content-Length'] = os.path.getsize(the_file)    
 	response['Content-Disposition'] = "attachment; filename=%s" % filename
 	return response
