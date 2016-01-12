@@ -24,6 +24,7 @@ def is_prof(nom):
 
 
 def genererCSVnotes(qcm):
+	"""encore à écrire."""
 	dossier="media/ups/"+str(qcm.prof.id)+"/"+str(qcm.id)+"/"  
 	codes=range(100000)			# Ces cinq lignes donnent un ensemble des codes liés à la qcm.  
 	random.seed(float('0.'+str(qcm.id)))  	
@@ -34,7 +35,7 @@ def genererCSVnotes(qcm):
 	fichierCSV=io.FileIO(dossier+"notes.csv",'w')
 	for qcmpdf in listecopies:
 		fichierCSV.write(str(codes[qcmpdf.numero])+","+qcmpdf.corecopie_set.all()[0].eleve.nom.encode('ascii','replace')+","+str(qcmpdf.getnote()))
-		fichierCSV.write("\n")
+		fichierCSV.write("\n")		
 	fichierCSV.close()
 	return str(dossier+"notes.csv")
 	
@@ -60,7 +61,7 @@ def svg(request,id_svg, prefix):
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom = str(request.user.username)
-	if prefix == '1':		#
+	if prefix == '1':		
 		prefix = "exo"
 	elif prefix == '2':
 		prefix = "qcm-prev"
