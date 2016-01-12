@@ -59,6 +59,14 @@ def genererCSVnotes(qcm):
 	return str(dossier+"notes.csv")
 	
 def telecharger(request,objet):
+	"""
+	entrée:		une requête qui provient d'un utilisateur
+			un fichier à télécharger où son chemin (comme chaîne ou en unicode)
+	sortie:		une réponse qui laisse l'utilisateur télécharger le fichier
+	
+	A aussi pour effet d'ajouter des informations à la bibliothèque de la réponse.
+	
+	"""
 	if isinstance(objet,models.FileField):  # Fait en sorte que la fonction puisse gérer trois types.
 		the_file = objet.path		# un fichier comme attribut, et deux types de chaînes.
 	elif isinstance(objet,str):
