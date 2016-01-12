@@ -96,17 +96,18 @@ def svg(request,id_svg, prefix):
 	
 
 def image(request,id_cc,page):
-	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
-	id_cc = int(id_cc)
+	id_cc = int(id_cc)  # id_cc = l'identifiant de CoreCopie
 	page = int(page)
 	try:
-		el=Eleve.objects.get(nom=nom)
-		cc=CoreCopie.objects.get(id=id_cc)
+		el=Eleve.objects.get(nom=nom)  # récupère l'élève qui porte le nom de l'utilisateur.
+		cc=CoreCopie.objects.get(id=id_cc) 
 		if el==cc.eleve:
+		# télécharchement permis si (l'élève auyant le nom de l'utilisateur) = (élève a qui appartient la copie)
 			return telecharger(request,cc.getpage(page))
+			
 		else:
 			raise Exception(el.nom,cc.eleve.nom)
 	except:
