@@ -24,16 +24,35 @@ def is_prof(nom):
 
 
 def genererCSVnotes(qcm):
-	"""encore à écrire."""
+	
+	"""
+	Entrée: 	Un objet de type CoreQcm.
+	Sorie:		comme "produit secondaire", un chemin d'accès pour le fichier de notes (à vérifier)
+	
+	Met à jour "le" fichier de notes. Le fichier est un tableau dont les lignes sont agencées comme suit:
+	numéro de qcm,    nom_élève,    note_élève
+	Si les corrigés pour le qcm ne sont pas dans la base de données, il ne se passe rien.
+	
+	
+	QUESTIONS:
+	
+	-D'où sort le fichier notes.csv? Ceci est la seule fonction qui agit là-dessus? 
+	C'est un grand fichier danslequel toutes les toutes de toutes les années de tous les enseignements sont sauvegardées?
+	
+	-CoreQcmPdf n'a pas d'identifiant d'élève parmi ces attributs. 
+	Alors, comment peut-on déduire une note pour un élève à partir d'un QcmPdf?
+	La réponse se trouve sans doute dans getNote mais cette fontion est particulièrement dure à comprendre.
+	
+	"""
 	dossier="media/ups/"+str(qcm.prof.id)+"/"+str(qcm.id)+"/"  
 	codes=range(100000)			# Ces cinq lignes donnent un ensemble des codes liés à la qcm.  
 	random.seed(float('0.'+str(qcm.id)))  	
-	random.shuffle(codes)			# à faire : Peut-être à remplacer par une fonction.
-	random.shuffle(codes)			# Je vous enverrai une proposition pour une fonction. 
-	random.shuffle(codes)			# à faire: Quel est l'intérêt de cette manip? C'est un verouillement?
+	random.shuffle(codes)		
+	random.shuffle(codes)			
+	random.shuffle(codes)			# à faire: Quel est l'intérêt de cette manip? C'est un verrouillement?
 	listecopies=[qcmpdf for qcmpdf in qcm.coreqcmpdf_set.all() if qcmpdf.reponses != ""]
 	fichierCSV=io.FileIO(dossier+"notes.csv",'w')
-	for qcmpdf in listecopies:
+	for qcmpdf in listecopies:		
 		fichierCSV.write(str(codes[qcmpdf.numero])+","+qcmpdf.corecopie_set.all()[0].eleve.nom.encode('ascii','replace')+","+str(qcmpdf.getnote()))
 		fichierCSV.write("\n")		
 	fichierCSV.close()
