@@ -60,7 +60,7 @@ def svg(request,id_svg, prefix):
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom = str(request.user.username)
-	if prefix == '1':
+	if prefix == '1':		#
 		prefix = "exo"
 	elif prefix == '2':
 		prefix = "qcm-prev"
@@ -83,7 +83,7 @@ def svg(request,id_svg, prefix):
 					svg = "media/ups/"+str(exo.banque.prof.id)+"/"+prefix+"-"+str(id_svg)+".svg"
 			except Exception,er:
 				print('Erreur svg: '+str(er))  # à faire: qu'est-ce que l'utilisateur voit de cq?
-				return HttpResponse("Non disponible") # se qui s'affiche pour l'utilisateur
+				return HttpResponse("Non disponible") # ce qui s'affiche pour l'utilisateur
 				
 				
 		return telecharger(request,svg)
@@ -131,10 +131,10 @@ def ehome(request):	# La page d'accueil pour les élèves. à faire essayer de c
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
-	el,nouveleleve=Eleve.objects.get_or_create(nom=nom)
+	el,nouveleleve=Eleve.objects.get_or_create(nom=nom)	# nouveleleve vaut True ssi el a été créé.
 	if request.method == 'POST':
-		formAssign=AssignerCopie(request.POST)
-		if formAssign.is_valid():
+		formAssign=AssignerCopie(request.POST)		# laisse l'utilisateur remplir un formulaire.
+		if formAssign.is_valid():			
 			try:
 				qcmid,numcopie=formAssign.cleaned_data['numcopie'].split('-')
 				qcmid=int(qcmid)
@@ -148,7 +148,7 @@ def ehome(request):	# La page d'accueil pour les élèves. à faire essayer de c
 				qcm = CoreQcm.objects.get(id=qcmid)
 				qcmpdf = CoreQcmPdf.objects.get(qcm=qcm,numero=numcopie)
 			except:
-				err='1'		# erreur1 veut dire que 
+				err='1'		#  veut dire "numéro incorrect."
 			try:
 				if not [cc for cc in el.corecopie_set.all() if cc.qcmpdf.qcm==qcm]:
 					cp=CoreCopie.objects.get(qcmpdf=qcmpdf)
@@ -156,9 +156,9 @@ def ehome(request):	# La page d'accueil pour les élèves. à faire essayer de c
 						cp.eleve=el
 						cp.save()
 					else:
-						err='3'
+						err='3' 	# veut dire "copie déjà assignée à un autre élève."
 				else:
-					err='4'
+					err='4'	#  veut dire "Vous avez déjà ."	
 			except Exception, er:
 				print("Erreur : ",er)
 				err='2'
