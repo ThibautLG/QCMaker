@@ -24,9 +24,9 @@ def is_prof(nom):
 
 
 def genererCSVnotes(qcm):
-	dossier="media/ups/"+str(qcm.prof.id)+"/"+str(qcm.id)+"/"
+	dossier="media/ups/"+str(qcm.prof.id)+"/"+str(qcm.id)+"/"  
 	codes=range(100000)
-	random.seed(float('0.'+str(qcm.id)))
+	random.seed(float('0.'+str(qcm.id)))  	# Ces quatres lignes donnent un ensemble de codes liés à la qcm.  
 	random.shuffle(codes)
 	random.shuffle(codes)
 	random.shuffle(codes)
