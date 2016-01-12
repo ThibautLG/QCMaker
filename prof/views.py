@@ -101,22 +101,27 @@ def image(request,id_cc,page):
 	nom=str(request.user.username)
 	id_cc = int(id_cc)  # id_cc = l'identifiant de CoreCopie
 	page = int(page)
-	try:
-		el=Eleve.objects.get(nom=nom)  # récupère l'élève qui porte le nom de l'utilisateur.
-		cc=CoreCopie.objects.get(id=id_cc) 
+	try:	
+		el=Eleve.objects.get(nom=nom)  		# (étiquette:XX1)  récupère l'élève qui porte le nom de l'utilisateur.
+		cc=CoreCopie.objects.get(id=id_cc) 	# (étiquette:XX1)
 		if el==cc.eleve:
-		# télécharchement permis si (l'élève auyant le nom de l'utilisateur) = (élève a qui appartient la copie)
+			# téléchargement permis si (l'élève auyant le nom de l'utilisateur) = (élève a qui appartient la copie)
 			return telecharger(request,cc.getpage(page))
 			
 		else:
 			raise Exception(el.nom,cc.eleve.nom)
+			# Sinon lever une exception qui nous envoie dans le "except" ci-dessus.
+			
 	except:
-		try:
+		try:	
+			# Si l'erreur vient de XX1, alors c'est peut-être un enseignant.
 			pr=Enseignant.objects.get(nom=nom)
 			cc=CoreCopie.objects.get(id=id_cc)
 			if pr==cc.qcmpdf.qcm.prof:
 				return telecharger(request,cc.getpage(page))
 		except Exception, er:
+			# on affiche "non disponible" les données voulues sont introuvables.
+			# ou si le téléchargement plus haut échoue.
 			print("Erreur : ",er)
 			return HttpResponse("Non disponible")
 	
