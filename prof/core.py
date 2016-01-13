@@ -39,6 +39,12 @@ dl=600
 
 
 def exo2tex(exo,correction):
+	
+	"""
+	entrée:		un objet de type CoreExo.
+			un booléén qui indique s'il faut que la correction soit indiquée dans la sortie.
+	sortie:		
+	"""
 
     TeXexo=list() #liste contenant le code TeX pour la liste aGen d'exos, aGen est une list() de numéros d'exos de cette instance de classe, dont on doit générer le 
     TeXexo.append(u"\\begin{exo}\n")
