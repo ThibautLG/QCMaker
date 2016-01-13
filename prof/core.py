@@ -8,8 +8,6 @@
 #							note@reponse2
 #on veut tirer un certain nombre de questions au hasard dans chaque liste d'exos que l'on se donne
 
-# BOULOT: Préciser dans toutes les fonctions à quelles autres fonctions elles font appel. 
-
 import sys
 import random
 import io
@@ -90,7 +88,7 @@ ntosymb(5,"1") 		renvoie le code de	blanc, blanc, blanc, blanc, blanc
 ntosymb(4,"110") 	renvoie le code de	blanc, noir, noir, blanc
 
 Avec cette suite de cases, on peut produire un "code de carrés" au moyen de laquelle
-une copie peut être reconnu par des les fonctions décrites dans Core,
+un QCM peut être reconnu par des les fonctions décrites dans Core,
 au travers du module openCV de Python.
 
 
@@ -116,7 +114,7 @@ sortie:		Une liste de chaînes, en partie code TeX, en partie code HTML.
 
 Les composants de la liste, s'ils sont mis bout à bout, 
 forment le gabarit avec les éléments de l'exo insérés aux bons endroits.
-Dans les exos, les valeurs des réponses ont étées marquées.
+Dans les exos, les valeurs des réponses ont étées marquées. (bonne réponse en vert)
 La fonction elle-même utilise exo2tex pour produire les lignes de code latex de l'exo.
 La fonction est appelée dans genererSvg où le code sera traité plus loin.
 """
@@ -160,14 +158,20 @@ def genererTeX(qcmpdf,template):
 """
 entrée:		un objet de type CoreQcmPdf
 		un gabarit HTML (template)
+sortie:		une liste de chaînes qui contiennent du code HTMl et du code LaTex.
+		L'ensemble de chaînes reliées les unes aux autres est le corps d'un QCM en code brut. 
 
+Le gabarit est ouvert et coupé en lignes. Ensuite les exos sont produits (avec tex2exo) et insérés.
+À partir du nombre d'élèves est déduit le "code de carrés" qui est mis au lieu souhaité,
+ainsi que les renseignements sur les moyens permis.
 
+Dans cette fonction les fonctions tex2exo et ntosymb sont à l'oeuvre. 
 """
     
-    with codecs.open(template, 'r', 'utf-8') as f:
-        TeX=f.readlines()
+    with codecs.open(template, 'r', 'utf-8') as f:	# Le gabarit est ouvert.
+        TeX=f.readlines()		# On en garde un gabarit découpé.	
     indexExos=TeX.index(sepTeXExos)	# L'endroit où commencent les exos du questionnaire.
-    TeX.remove(sepTeXExos)		
+    TeX.remove(sepTeXExos)		# Ligne inutile.
 
     for exoqcmpdf in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=qcmpdf), key=lambda r: int(r.position)):
 	exo = exoqcmpdf.exo		
@@ -176,6 +180,7 @@ entrée:		un objet de type CoreQcmPdf
             TeX.insert(indexExos,ligne)
             indexExos+=1
     nmax=int(np.trunc(np.log2(len(qcmpdf.qcm.coreqcmpdf_set.all())))+1)
+    #nmax est le nombre de cases dont on a besoin pour que chaque copie (BOULOT) ait un code de carré unique.
     TeX.insert(TeX.index(sepCodeExo),str(qcmpdf.code)+u" \\Huge + $ "+ntosymb(str(bin(qcmpdf.numero)[2:]),nmax)+u" $ \\normalsize")
     TeX.insert(TeX.index(sepNom),qcmpdf.qcm.nomTeX)
     TeX.insert(TeX.index(sepTexte),qcmpdf.qcm.texteTeX)
@@ -189,7 +194,7 @@ entrée:		un objet de type CoreExo
 		un nom de dossier dans lequel est fait un ficher à préciser (BOULOT) 
 sortie:		comme produit secondaire:
 		-0 si la compilation du code LaTex s'est bien déroulé.
-		-une erreur de compilation, bien mise en forme, si la compilation LaTex échoue.
+		-une erreur de compilation (chaîne), bien mise en forme, si la compilation LaTex échoue.
 
 Cette fonction fait un fichier qui contient un gabarit HTML avec des formules compilés. 
 La compilation s'est fait à l'aide du module Python subprocess,
@@ -226,6 +231,18 @@ qui permet d'appliquer des logiciels de l'extérieur et de récupérer des erreu
 	
 def genererSvgQcm(qcm,dossier):
 
+"""
+entrée:		un objet de type CoreQcm
+		un nom de dossier dans lequel est fait un ficher à préciser (BOULOT) 
+sortie:		comme produit secondaire:
+		-0 si la compilation du code LaTex s'est bien déroulé.
+		-une erreur de compilation (chaîne), bien mise en forme, si la compilation LaTex échoue.
+
+Cette fonction fait l'en-tête du questionnaire avec des formules compilés.
+PAS LE QCM TOUT ENTIER comme le nom de la fonction le laisse penser.
+La compilation s'est fait à l'aide du module Python subprocess,
+qui permet d'appliquer des logiciels de l'extérieur et de récupérer des erreur qu'il renvoie en cas de malheur.
+"""
 
     with codecs.open(dossier+'/qcm-prev-'+str(qcm.id)+'.tex','w','utf-8') as f:
 	for ligne in genererTeXQcmPreview(qcm,'template.tex'):
@@ -301,15 +318,32 @@ def genererPdfs(args):
     qcm.save()
 
 def randomSample(taillesample,taillebanque,ntotal):
-	
+"""
+entrée:		la taille d'un ensemble de nombres qu'on tire aléatoirement, à plusieurs reprises.
+		La taille de l'ensemble duquel les nombres seront tirés.
+		Le nombre de fois qu'on répète ce tirage.
+sortie:		une liste de listes, donc une suite d'ensemble tirés au hasard comme expliqué.
+
+Va servir à choisir aléatoirement des exos de la banque,
+en ayant soin de ne pas mettre deux fois le même exo dans un questionnaire.
+
+La fonction est utilisée dans genererQcm.
+C'est par ailleurs la seule fonction utilisant Random pour vraiment faire intervenir le hasard.
+"""
 	random.seed()
 	ret = list()
 	for i in range(ntotal):
 		ret.append(random.sample(range(taillebanque),taillesample))
-
 	return ret
 
 def genererQcm(args):
+"""
+entrée:		une liste
+		-dont le premier composant est un objet de type CoreQcm
+		-dont le deuxième composant est un drôle d'objet (BOULOT)
+sortie:		
+"""
+
     qcm=args[0]
     nbpdfstexte=args[1]
     nbpdfstexte=nbpdfstexte.split(',')
