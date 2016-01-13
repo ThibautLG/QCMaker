@@ -267,7 +267,15 @@ qui permet d'appliquer des logiciels de l'extérieur et de récupérer des erreu
 
 
 def genererPdfs(args):
-    
+"""
+entrée:		Une paire dont:
+		- le premier composant est l'identifiant d'un QCM.
+		- le premier est le nom d'un dossier
+sortie:		aucune
+
+Dans un premier temps la fonction essaie de faire une arborescence de dossiers ayant le nom renseigné,
+afin d'enregistrer le pdf que va produire la fonction.
+"""
     idqcm=args[0]
     dossier=args[1]
     qcm=CoreQcm.objects.get(id=idqcm)
@@ -283,14 +291,14 @@ def genererPdfs(args):
     except:
 	print('Impossible de créer les dossiers '+dossier+'/...')
 	pass
-    print(os.getcwd())
-    template="template.tex"
-    pdfuniteArg=list()
-    pdfuniteArg.append('pdfunite')
+    print(os.getcwd())		# cwd = Current Working Directory
+    template="template.tex"	
+    pdfuniteArg=list()		# Ici on mettre tous les chemin des pdf produits qu'on unira plus tard.	
+    pdfuniteArg.append('pdfunite')	# Il s'agit bien du mot anglais unite, pas d'unité
     paquet=1
-    i=0
+    i=0			# i va servir à numéroter les pdfs qu'on produit.
     while qcm.coreqcmpdf_set.filter(paquet=paquet):
-        asupprimer=list()
+        asupprimer=list() # recense les fichiers (pdf,tex) faits par le compilateur LaTex qui deviendront inutiles. 
         for qcmpdf in sorted(qcm.coreqcmpdf_set.filter(paquet=paquet), key=lambda r: int(r.id)):
             i+=1
             with codecs.open(dossier+'/originaux/exos'+str(i)+".tex",'w','utf-8') as f:
@@ -310,7 +318,9 @@ def genererPdfs(args):
             sh.copy(dossier+'/originaux/exos'+str(i)+'.pdf',dossier+"/originaux/exos-"+str(paquet)+'.pdf')
         for fichier in asupprimer:
             os.remove(fichier)
-
+	# maintenant le jour n'est joué que pour le premier paquet!
+	# BOULOT: 	Tirer au clair la suite du déroulement du procédé. 
+	
         pdfuniteArg=list()
         pdfuniteArg.append('pdfunite')
         paquet+=1
@@ -340,57 +350,69 @@ def genererQcm(args):
 """
 entrée:		une liste
 		-dont le premier composant est un objet de type CoreQcm
-		-dont le deuxième composant est un drôle d'objet (BOULOT)
-sortie:		
+		-dont le deuxième composant est une chaîne qui motre
+		 comment les qcm sont répartis en paquets:
+		 exemple: pour 200 qcm ont peut choisir "30, 70, 100"
+		 donc un paquet de 30 qcm, un paquet de 70 et un de 100.
+sortie:		aucune valeur.
+Même si cette fontion ne renvoie ne renvoie rien elle fait beaucoup au niveau des modèles:
+Les champs du QCM pris en entrée sont mis à jour sont mis à jour  
 """
 
     qcm=args[0]
-    nbpdfstexte=args[1]
-    nbpdfstexte=nbpdfstexte.split(',')
-    nbpdfs=list()
-    ntotal=0
+    nbpdfstexte=args[1] # une chaîne qui montre comment les versions sont réparties en paquets.
+    nbpdfstexte=nbpdfstexte.split(',') # on en fait une liste.
+    nbpdfs=list()	
+    ntotal=0		# On aditionne les tailles de tous les paquest pour compter le nombre de qcm requis.
     for nb in nbpdfstexte:
         nbpdfs.append(int(nb))
         ntotal+=int(nb)
-
-    nmax=int(np.trunc(np.log2(ntotal))+1)
-    qcm.nmax=nmax
-    qcm.save()
-    codes=range(100000)
+	# nmax = le nombre de carrés noirs/blancs dont on a besoin pour donner un code unique à chaque qcm.
+	# autrement dit la longueur du code carrés.
+    nmax=int(np.trunc(np.log2(ntotal))+1)	
+    qcm.nmax=nmax	# mise à jour de cette longueur dans l'enregistrement qcm du modèle CoreQcm 
+    qcm.save()		# la sauvegarde (ceci a été décrit dans le corps d'une fonction après tout.)
+    codes=range(100000)	# les fameux codes aux travers desquels on récupère les bons attributs du qcm.
     random.seed(float('0.'+str(qcm.id)))
     random.shuffle(codes)
     random.shuffle(codes)
     random.shuffle(codes)
 
-    paquet=0
-    numero=1
+    paquet=0	# Dans un premier temps on traite le premier paquet de qcm.
+    numero=1	# BOULOT: le sens du numéro est à éclaircir.
     print("gQCM 1")
+    # Fait une liste d'objets par le biais desquels on peut atteindre les banques d'exos dont doivent être tirés les exos.
     listebanques = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.position))
     rand = list()
-    for nbexos in listebanques:
+    for nbexos in listebanques:		# Pour chaque banque...
+    	# On tire un autant d'ensembles de numéros d'exos de la taille requise qu'on en a besoin
+    	# pour pouvoir tous les qcm en questions.
 	rand.append(randomSample(nbexos.nb,len(nbexos.banque.coreexo_set.all()),ntotal))
 
     print("gQCM 2")
-    for nb in nbpdfs:
-        paquet+=1
-	for i in range(nb):
-	    position=1
+    	
+    for nb in nbpdfs:	# rappel: nbpfs est maintenant une liste de nombres de qcm par paquet
+        paquet+=1	# on passe au paquet suivant.
+	for i in range(nb):	# pour chaque qcm qu'on doit faire dans le paquet
+	    position=1		
+	    # on crée un nouvel enregistrement du modèle CoreQcmPdf, avec les données qu'on a créées
 	    qcmpdf=CoreQcmPdf(numero=numero,code=str(qcm.id)+"-"+str(codes[numero]),qcm=qcm,paquet=paquet)
-            qcmpdf.save()
-	    print('gQCM 3:'+str(i))
-	    numerobanque = 0
-            for nbexos in listebanques:
-                listeexos = nbexos.banque.coreexo_set.all()
+            qcmpdf.save()	# sauvegarde pourque ce changement soit maintenu quand l'appel à la fonction s'achève.
+	    print('gQCM 3:'+str(i))	
+	    numerobanque = 0	
+	    # Dans cette boucle les exos aléatoires dont on a déjà sorti les nombres sont enfin attribués.
+            for nbexos in listebanques:		# pour chaque "objet" par lequel on passe pour accéder à la banque
+                listeexos = nbexos.banque.coreexo_set.all()	# on rassemble tous les exos dans cette banque
                 #r=random.sample(range(len(listeexos)),nbexos.nb)
-		r=rand[numerobanque][numero-1]
-                for i in r:
+		r=rand[numerobanque][numero-1]	# rappel: rand est une suite de tirages d'ensembles de numéros d'exos.	
+                for i in r:	# Du coup on parcourt ici tous les numéros d'exos d'un tirage en particulier.
                     exoqcmpdf = CoreExoQcmPdf(qcmpdf=qcmpdf,exo=listeexos[i],position=position)
-                    exoqcmpdf.save()
-		    position += 1
+                    exoqcmpdf.save()	# Ajout et sauvegarde d'un objet qui rattache une copie à une banque. 
+		    position += 1	# (BOULOT à préciser)
 
 		numerobanque += 1
             numero+=1
-    print('gQCM nmax:'+str(qcm.nmax)+' ou '+str(nmax))
+    print('gQCM nmax:'+str(qcm.nmax)+' ou '+str(nmax))		# BOULOT: à éclaircir.
 
 ##### correction
 
