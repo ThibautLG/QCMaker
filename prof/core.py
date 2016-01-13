@@ -8,7 +8,7 @@
 #							note@reponse2
 #on veut tirer un certain nombre de questions au hasard dans chaque liste d'exos que l'on se donne
 
-# BOULOT: Précices dans toutes les fonctions à quelles autres fonctions elles font appel. 
+# BOULOT: Préciser dans toutes les fonctions à quelles autres fonctions elles font appel. 
 
 import sys
 import random
@@ -74,6 +74,28 @@ def exo2tex(exo,correction):
 
     
 def ntosymb(n,nmax):
+"""
+Entrée:		une chaîne qui contient des 1 et des 0, appelé n.
+		un nombre qui indique la longueur de la suite renvoyée par la fonction
+Sortie:		une chaîne qui contient le code LaTex d'une suite de carrés noirs ou blancs.
+
+Pour chaque 1, un carré noir est ajouté à la suite dont obtient le code LaTex.
+Pour chaque 0, un carré blanc est ajouté.
+Pour finir, au début de la suite bdes carrés blancs sont ajoutés 
+de telle sorte que la suite ait nmax cases.
+
+Quelques exemples:
+ntosymb(5,"101") 	renvoie le code de	blanc, blanc, noir, blanc, noir
+ntosymb(5,"1") 		renvoie le code de	blanc, blanc, blanc, blanc, blanc
+ntosymb(4,"110") 	renvoie le code de	blanc, noir, noir, blanc
+
+Avec cette suite de cases, on peut produire un "code de carrés" au moyen de laquelle
+une copie peut être reconnu par des les fonctions décrites dans Core,
+au travers du module openCV de Python.
+
+
+
+"""
     symb=""    
     for i in range(nmax-len(n)):
         symb=symb+u"\\Box"
@@ -82,7 +104,6 @@ def ntosymb(n,nmax):
             symb=symb+u"\\blacksquare"
         if i=='0':
             symb=symb+u"\\Box"
-
     return symb
     
 
@@ -96,6 +117,7 @@ sortie:		Une liste de chaînes, en partie code TeX, en partie code HTML.
 Les composants de la liste, s'ils sont mis bout à bout, 
 forment le gabarit avec les éléments de l'exo insérés aux bons endroits.
 Dans les exos, les valeurs des réponses ont étées marquées.
+La fonction elle-même utilise exo2tex pour produire les lignes de code latex de l'exo.
 La fonction est appelée dans genererSvg où le code sera traité plus loin.
 """
 
@@ -118,6 +140,8 @@ sortie:		Une liste de chaînes, en partie code TeX, en partie code HTML.
 
 Les composants de la liste, s'ils sont mis bout à bout, 
 forment le gabarit avec les éléments de l'aperçu de QCM insérés aux bons endroits.
+
+La fonction elle-même utilise ntosymb.
 La fonction est appelée dans genererSvgQcm où le code sera traité plus loin.
 """
 
@@ -132,14 +156,21 @@ La fonction est appelée dans genererSvgQcm où le code sera traité plus loin.
 
 
 def genererTeX(qcmpdf,template):
+	
+"""
+entrée:		un objet de type CoreQcmPdf
+		un gabarit HTML (template)
+
+
+"""
     
     with codecs.open(template, 'r', 'utf-8') as f:
         TeX=f.readlines()
-    indexExos=TeX.index(sepTeXExos)
-    TeX.remove(sepTeXExos)
+    indexExos=TeX.index(sepTeXExos)	# L'endroit où commencent les exos du questionnaire.
+    TeX.remove(sepTeXExos)		
 
     for exoqcmpdf in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=qcmpdf), key=lambda r: int(r.position)):
-	exo = exoqcmpdf.exo
+	exo = exoqcmpdf.exo		
         texexo = exo2tex(exo,False)
         for ligne in texexo:
             TeX.insert(indexExos,ligne)
