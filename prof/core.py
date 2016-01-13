@@ -8,6 +8,8 @@
 #							note@reponse2
 #on veut tirer un certain nombre de questions au hasard dans chaque liste d'exos que l'on se donne
 
+# BOULOT: Précices dans toutes les fonctions à quelles autres fonctions elles font appel. 
+
 import sys
 import random
 import io
@@ -43,16 +45,22 @@ def exo2tex(exo,correction):
 	"""
 	entrée:		un objet de type CoreExo.
 			un booléén qui indique s'il faut que la correction soit indiquée dans la sortie.
-	sortie:		
+	sortie:		une liste des morceaux d'exos en code Tex brut. Les moreceaux sont des chaînes.
+	
+	Cette fonction est appelée dans genererTexHtml et dans genererTex. 
+	La forme de l'objet renvoyé s'explique par le fait suivant:
+	Les lignes doivent être mises une par une au bon endroit dans un gabarit HTML. 
 	"""
 
-    TeXexo=list() #liste contenant le code TeX pour la liste aGen d'exos, aGen est une list() de numéros d'exos de cette instance de classe, dont on doit générer le 
+    TeXexo=list() #liste contenant le code TeX pour la liste aGen d'exos,  
     TeXexo.append(u"\\begin{exo}\n")
     TeXexo.append(exo.question+u"\n")
-    if exo.corereponse_set.all():
+    if exo.corereponse_set.all():	# Si les réponses possibles sont enregistrées dans la base de données
     	TeXexo.append(u"\n\\medskip\n\\begin{minipage}{ \\textwidth}\\begin{itemize}[label=$\\square$]\n")
+    	# La ligne ci-dessus force LaTex d'appliquer la mise en forme typique d'une question à multiple choix.
     	for reponse in sorted(exo.corereponse_set.all(), key=lambda r: int(r.position)):
-		if reponse.nom == "v" and correction:
+    		# à chaque tour de boucle on ajoute une question.
+		if reponse.nom == "v" and correction:	# la bonne réponse est affiché en vert si correction=True.
 			TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
 		else:
 			TeXexo.append(u"\item "+reponse.texte+u"\n")
@@ -80,9 +88,20 @@ def ntosymb(n,nmax):
 
 def genererTeXHTML(exo,template):
 
+"""
+entrée:		un objet de type CoreExo
+		un gabarit HTML (template)
+sortie:		Une liste de chaînes, en partie code TeX, en partie code HTML.
+
+Les composants de la liste, s'ils sont mis bout à bout, 
+forment le gabarit avec les éléments de l'exo insérés aux bons endroits.
+Dans les exos, les valeurs des réponses ont étées marquées.
+La fonction est appelée dans genererSvg où le code sera traité plus loin.
+"""
+
     with codecs.open(template, 'r', 'utf-8') as f:
         TeX=f.readlines()
-    indexExos=TeX.index(sepTeXExos)
+    indexExos=TeX.index(sepTeXExos)	
     TeX.remove(sepTeXExos)
     texexo = exo2tex(exo,True)
     for ligne in texexo:
@@ -92,6 +111,15 @@ def genererTeXHTML(exo,template):
 
 
 def genererTeXQcmPreview(qcm,template):
+"""
+entrée:		un objet de type CoreQcm
+		un gabarit HTML (template)
+sortie:		Une liste de chaînes, en partie code TeX, en partie code HTML.
+
+Les composants de la liste, s'ils sont mis bout à bout, 
+forment le gabarit avec les éléments de l'aperçu de QCM insérés aux bons endroits.
+La fonction est appelée dans genererSvgQcm où le code sera traité plus loin.
+"""
 
     with codecs.open(template, 'r', 'utf-8') as f:
         TeX=f.readlines()
@@ -101,7 +129,6 @@ def genererTeXQcmPreview(qcm,template):
     TeX.insert(TeX.index(sepCodeExo),u"17-168748 \\Huge + $ "+ntosymb('1010101',7)+u" $ \\normalsize")
 
     return TeX
-
 
 
 def genererTeX(qcmpdf,template):
@@ -126,6 +153,17 @@ def genererTeX(qcmpdf,template):
 
 
 def genererSvg(exo,dossier):
+"""
+entrée:		un objet de type CoreExo
+		un nom de dossier dans lequel est fait un ficher à préciser (BOULOT) 
+sortie:		comme produit secondaire:
+		-0 si la compilation du code LaTex s'est bien déroulé.
+		-une erreur de compilation, bien mise en forme, si la compilation LaTex échoue.
+
+Cette fonction fait un fichier qui contient un gabarit HTML avec des formules compilés. 
+La compilation s'est fait à l'aide du module Python subprocess,
+qui permet d'appliquer des logiciels de l'extérieur et de récupérer des erreur qu'il renvoie en cas de malheur.
+"""
     
     template = "templateHTML.tex"
 
