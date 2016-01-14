@@ -8,17 +8,17 @@
 #							note@reponse2
 #on veut tirer un certain nombre de questions au hasard dans chaque liste d'exos que l'on se donne
 
-import sys
-import random
-import io
-import subprocess as sp
-import os
-import time
-import shutil as sh
-import numpy as np
-import cv2
-from prof.models import *
-import codecs
+import sys			
+import random		# pour tirer des exos aléatoirement, et pour les identifiants des qcm
+import io			
+import subprocess as sp	# pour appliquer le compilateur LaTex pour produire des énoncés mathématiques.
+import os		# permet la gestion des fichiers, au travers du code Python. (supprimer, créer des dossiers.)
+import time			
+import shutil as sh	# appelé une seule fois pour copier un dossier.	
+import numpy as np	# les fonctions mahtématiques pour python: la troncature, , ...
+import cv2		# appliqué pour reconnaitre des éléments sur les feuilles numérisées (cases remplies, balises)
+from prof.models import *  # La base de données, donc les qcm, les exos, les copies des élèves, et ainsi de suite.
+import codecs		# Ouverture des fichiers pour lire ou pour les mettre à jour en écrivant dedans.
 
 #variables utilisées
 
