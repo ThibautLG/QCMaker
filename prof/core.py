@@ -27,6 +27,7 @@ sepCodeExo = "%%%codeExo\n"
 sepNom = "%%%nomQCM\n"		# pour le nomTex du qcm
 sepTexte = "%%%texteQCM\n"	# pour le texteTex du qcm, (quelques mots sur les moyens permis).
 
+# BOULOT: rôle du code encore à éclaircir.
 # On doit pouvoir reconnaitre des cases numérisés pour pouvoir:
 	# - reconnaitre un questionnaire numérisé par son code de carrés
 	# - évaluer la réponse donnée par une élève (les cases qu'il a noircis)
@@ -69,8 +70,10 @@ def exo2tex(exo,correction):
     TeXexo.append(u"\\end{exo}\n\\bigskip\n")	# Indique la fin de l'exo et laisse quelques lignes en blanc après.
     if correction:	# Si la valeur d'entrée "correction vaut True", la correction est rajouté en bas en rouge.
 	TeXexo.append(u"\\begin{cor}\n{\\color{red}")	
-	TeXexo.append(exo.corrige)	# BOULOT expliquer les mots-clés begin{} et end{}
+	TeXexo.append(exo.corrige)	
 	TeXexo.append(u"}\n\\end{cor}\n\\bigskip")
+	# Les mots-clés \begin{truc} et \end{truc} permettent d'encadrer en morceau du gabarit
+	# pour que le pdf prenne l'aspect tel que décrit dans la "préambule" du gabarit.
     return TeXexo
 
     
@@ -114,7 +117,7 @@ entrée:		un objet de type CoreExo
 sortie:		Une liste de chaînes, en code Tex.
 
 Les composants de la liste, s'ils sont mis bout à bout, 
-forment le gabarit avec les éléments de l'exo insérés aux bons endroits.
+forment le gabarit Tex avec les éléments de l'exo insérés aux bons endroits.
 Dans les exos, les valeurs des réponses ont étées marquées. (bonne réponse en vert)
 La fonction elle-même utilise exo2tex pour produire les lignes de code latex de l'exo.
 La fonction est appelée dans genererSvg où le code sera traité plus loin.
@@ -151,6 +154,7 @@ La fonction est appelée dans genererSvgQcm où le code sera traité plus loin.
     TeX.insert(TeX.index(sepTexte),qcm.texteTeX)
     TeX.insert(TeX.index(sepCodeExo),u"17-168748 \\Huge + $ "+ntosymb('1010101',7)+u" $ \\normalsize")
 
+
     return TeX
 
 
@@ -158,15 +162,16 @@ def genererTeX(qcmpdf,template):
 	
 """
 entrée:		un objet de type CoreQcmPdf
-		un gabarit HTML (template)
-sortie:		une liste de chaînes qui contiennent du code HTMl et du code LaTex.
+		un gabarit tex (template)
+sortie:		une liste de chaînes qui contiennent du code LaTex.
 		L'ensemble de chaînes reliées les unes aux autres est le corps d'un QCM en code brut. 
 
 Le gabarit est ouvert et coupé en lignes. Ensuite les exos sont produits (avec tex2exo) et insérés.
 À partir du nombre d'élèves est déduit le "code de carrés" qui est mis au lieu souhaité,
 ainsi que les renseignements sur les moyens permis.
 
-Dans cette fonction les fonctions tex2exo et ntosymb sont à l'oeuvre. 
+Dans cette fonction les fonctions tex2exo et ntosymb sont à l'oeuvre.
+Plus loin la fonction est utilisé dans genererPdfs
 """
     
     with codecs.open(template, 'r', 'utf-8') as f:	# Le gabarit est ouvert.
@@ -175,14 +180,15 @@ Dans cette fonction les fonctions tex2exo et ntosymb sont à l'oeuvre.
     TeX.remove(sepTeXExos)		# Ligne inutile.
 
     for exoqcmpdf in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=qcmpdf), key=lambda r: int(r.position)):
-	exo = exoqcmpdf.exo		
+	exo = exoqcmpdf.exo		#  		
         texexo = exo2tex(exo,False)
         for ligne in texexo:
-            TeX.insert(indexExos,ligne)
+            TeX.insert(indexExos,ligne)	
             indexExos+=1
     nmax=int(np.trunc(np.log2(len(qcmpdf.qcm.coreqcmpdf_set.all())))+1)
-    #nmax est le nombre de cases dont on a besoin pour que chaque copie (BOULOT) ait un code de carré unique.
+    #nmax est le nombre de cases dont on a besoin pour que chaque qcm ait un code de carré unique.
     TeX.insert(TeX.index(sepCodeExo),str(qcmpdf.code)+u" \\Huge + $ "+ntosymb(str(bin(qcmpdf.numero)[2:]),nmax)+u" $ \\normalsize")
+    # La lgine ci-dessus insère à l'endroit de la balise du code de l'exo le code du QcmPdf avec le code de carrés.
     TeX.insert(TeX.index(sepNom),qcmpdf.qcm.nomTeX)
     TeX.insert(TeX.index(sepTexte),qcmpdf.qcm.texteTeX)
 
@@ -192,49 +198,54 @@ Dans cette fonction les fonctions tex2exo et ntosymb sont à l'oeuvre.
 def genererSvg(exo,dossier):
 """
 entrée:		un objet de type CoreExo
-		un nom de dossier dans lequel est fait un ficher à préciser (BOULOT) 
+		un nom de dossier dans lequel sera fait un pdf de l'exo.
 sortie:		comme produit secondaire:
 		-0 si la compilation du code LaTex s'est bien déroulé.
 		-une erreur de compilation (chaîne), bien mise en forme, si la compilation LaTex échoue.
 
-Cette fonction fait un fichier qui contient un gabarit HTML avec des formules compilés. 
+Le fichier rendu contient des formules mathématiques.
 La compilation s'est fait à l'aide du module Python subprocess,
 qui permet d'appliquer des logiciels de l'extérieur et de récupérer des erreur qu'il renvoie en cas de malheur.
+En l'occurence c'est le compilateur de LaTex qui a été appelé.
+
+Étrangement cette fonction n'est pas appelée dans les autres fonctions du document.
 """
-    
-    template = "templateHTML.tex"
+
+    template = "templateHTML.tex"	# même si le nom contient HTML, c'est un gabarit Tex.	
 
     with codecs.open(dossier+'/exo-'+str(exo.id)+'.tex','w','utf-8') as f:
 	for ligne in genererTeXHTML(exo,'templateHTML.tex'):
-	    f.write(ligne)
+	    f.write(ligne)	# Cette boucle écrit le code LaTex qui était d'abord coupé en lignes.
     try:
+    	# On regarde d'abord si on peut tranquillement appliquer le compilateur LaTex à l'exo donné.
 	 sp.check_output(['pdflatex','-output-directory',dossier,dossier+'/exo-'+str(exo.id)+'.tex'])
+	 # Si ça ne génère pas d'erreur, on peut le faire.
 	 sp.call(['pdftocairo','-svg','-l','1',dossier+'/exo-'+str(exo.id)+'.pdf',dossier+'/exo-'+str(exo.id)+'.svg'])
-   	 os.remove(dossier+'/exo-'+str(exo.id)+'.aux')
- 	 os.remove(dossier+'/exo-'+str(exo.id)+'.log')
-   	 os.remove(dossier+'/exo-'+str(exo.id)+'.tex')
+   	 os.remove(dossier+'/exo-'+str(exo.id)+'.aux')	# Le nécessaire étant obtenu
+ 	 os.remove(dossier+'/exo-'+str(exo.id)+'.log')	# on peut tranquillement effacer ces quatre fichiers
+   	 os.remove(dossier+'/exo-'+str(exo.id)+'.tex')	# ils nous sont plus utile à ce stade-ci.
    	 os.remove(dossier+'/exo-'+str(exo.id)+'.pdf')
-    except sp.CalledProcessError as er:
-	erreurtemp=er.output.split('\n')
+    except sp.CalledProcessError as er:	# Il s'agit de l'erreur levé par check_output en cas d'une erreur LaTex.
+	erreurtemp=er.output.split('\n') # L'erreur est une chaîne qu'on met en forme.
 	erreur=""
 	for ligne in erreurtemp:
-		if ligne[:1] == "!":
+		if ligne[:1] == "!":	# Quand une ligne commence par un !, il y a un compte-rendu d'une erreur.
 	    		erreur += ligne+"\n"
-		#if ligne[:2] == "l.":
+		#if ligne[:2] == "l.":	
 			#ligneerreur = int(ligne.split(' ',1)[0][2:])
 			#with codecs.open(dossier+'/exo-'+str(exo.id)+'.tex','r','utf-8') as f:
 			#	texerreurs = f.readlines()
 			#print('\n'.join(texerreurs[ligneerreur:ligneerreur+2]))
 			#break
-	print(erreur)
-	return erreur 
+	print(erreur)	
+	return erreur 	# L'erreur est affiché pour le développeur et renvoyé au cas où.
     return 0
 	
 def genererSvgQcm(qcm,dossier):
 
 """
 entrée:		un objet de type CoreQcm
-		un nom de dossier dans lequel est fait un ficher à préciser (BOULOT) 
+		un nom de dossier dans lequel est fait un pdf de l'en-tête d'un qcm. 
 sortie:		comme produit secondaire:
 		-0 si la compilation du code LaTex s'est bien déroulé.
 		-une erreur de compilation (chaîne), bien mise en forme, si la compilation LaTex échoue.
@@ -243,12 +254,13 @@ Cette fonction fait l'en-tête du questionnaire avec des formules compilés.
 PAS LE QCM TOUT ENTIER comme le nom de la fonction le laisse penser.
 La compilation s'est fait à l'aide du module Python subprocess,
 qui permet d'appliquer des logiciels de l'extérieur et de récupérer des erreur qu'il renvoie en cas de malheur.
-"""
 
+Étrangement cette fonction n'est pas appelée dans les autres fonctions du document.
+"""
     with codecs.open(dossier+'/qcm-prev-'+str(qcm.id)+'.tex','w','utf-8') as f:
 	for ligne in genererTeXQcmPreview(qcm,'template.tex'):
-	    f.write(ligne.decode())
-    try:
+	    f.write(ligne.decode())	# L'en-tête en morceau est "recollé" dans un fichier.
+    try:	# La suite ressemble trait pour trait au la suite de genererSvg
 	 sp.check_output(['pdflatex','-output-directory',dossier,dossier+'/qcm-prev-'+str(qcm.id)+'.tex'])
 	 sp.call(['pdftocairo','-svg','-l','1',dossier+'/qcm-prev-'+str(qcm.id)+'.pdf',dossier+'/qcm-prev-'+str(qcm.id)+'.svg'])
    	 os.remove(dossier+'/qcm-prev-'+str(qcm.id)+'.aux')
@@ -264,7 +276,6 @@ qui permet d'appliquer des logiciels de l'extérieur et de récupérer des erreu
 	print(erreur)
 	return erreur 
     return 0
-
 
 
 def genererPdfs(args):
@@ -298,20 +309,20 @@ afin d'enregistrer le pdf que va produire la fonction.
     pdfuniteArg.append('pdfunite')	# Il s'agit bien du mot anglais unite, pas d'unité
     paquet=1
     i=0			# i va servir à numéroter les pdfs qu'on produit.
-    while qcm.coreqcmpdf_set.filter(paquet=paquet):
+    while qcm.coreqcmpdf_set.filter(paquet=paquet):	# tant qu'il y a des qcmpdf pour le paquet donné
         asupprimer=list() # recense les fichiers (pdf,tex) faits par le compilateur LaTex qui deviendront inutiles. 
         for qcmpdf in sorted(qcm.coreqcmpdf_set.filter(paquet=paquet), key=lambda r: int(r.id)):
-            i+=1
+            i+=1	
             with codecs.open(dossier+'/originaux/exos'+str(i)+".tex",'w','utf-8') as f:
                 for ligne in genererTeX(qcmpdf,template):
-                    f.write(ligne)
-            print('ok')
+                    f.write(ligne)	# Le fichier Tex est enfin construit.
+            print('ok')		# Ensuite on regarde si le compilateur peut être appelé.
             sp.check_output(['pdflatex','-output-directory',dossier+'/originaux',dossier+'/originaux/exos'+str(i)+".tex"])
-            asupprimer.append(dossier+'/originaux/exos'+str(i)+".tex")
-            asupprimer.append(dossier+'/originaux/exos'+str(i)+".pdf")
-            os.remove(dossier+'/originaux/exos'+str(i)+".aux")
-            os.remove(dossier+'/originaux/exos'+str(i)+".log")
-            pdfuniteArg.append(dossier+'/originaux/exos'+str(i)+'.pdf')
+            asupprimer.append(dossier+'/originaux/exos'+str(i)+".tex")	# on rajoute les fichiers à supprimer plus tard,
+            asupprimer.append(dossier+'/originaux/exos'+str(i)+".pdf")	
+            os.remove(dossier+'/originaux/exos'+str(i)+".aux")	# Si on peut compiler, pas besoin de garder ces deux fichiers.
+            os.remove(dossier+'/originaux/exos'+str(i)+".log")	
+            pdfuniteArg.append(dossier+'/originaux/exos'+str(i)+'.pdf')	# On ajoute un des pdf qu'on veut enchaîner.
         pdfuniteArg.append(dossier+"/originaux/exos-"+str(paquet)+'.pdf')
         if len(pdfuniteArg) > 3:
             sp.call(pdfuniteArg)
@@ -325,7 +336,7 @@ afin d'enregistrer le pdf que va produire la fonction.
         pdfuniteArg=list()
         pdfuniteArg.append('pdfunite')
         paquet+=1
-    qcm.generation=2
+    qcm.generation=2	# La génération est en fait le stade où se trouve la génération d'un qcm.
     qcm.save()
 
 def randomSample(taillesample,taillebanque,ntotal):
@@ -341,7 +352,7 @@ en ayant soin de ne pas mettre deux fois le même exo dans un questionnaire.
 La fonction est utilisée dans genererQcm.
 C'est par ailleurs la seule fonction utilisant Random pour vraiment faire intervenir le hasard.
 """
-	random.seed()
+	random.seed()	# permet d'entrer dans une grosse base de données pseuo-aléatoire
 	ret = list()
 	for i in range(ntotal):
 		ret.append(random.sample(range(taillebanque),taillesample))
