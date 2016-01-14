@@ -60,13 +60,13 @@ def exo2tex(exo,correction):
     		# à chaque tour de boucle on ajoute une question.
 		if reponse.nom == "v" and correction:	# la bonne réponse est affiché en vert si correction=True.
 			TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
-		else:
+		else:	# Sinon on ne précise rien sur la couleur de l'affichage
 			TeXexo.append(u"\item "+reponse.texte+u"\n")
-   	TeXexo.append(u"\\end{itemize}\end{minipage}\n")
-    TeXexo.append(u"\\end{exo}\n\\bigskip\n")
-    if correction:
-	TeXexo.append(u"\\begin{cor}\n{\\color{red}")
-	TeXexo.append(exo.corrige)
+   	TeXexo.append(u"\\end{itemize}\end{minipage}\n") # Indique la fin de la mise en forme particulière des réponses. 
+    TeXexo.append(u"\\end{exo}\n\\bigskip\n")	# Indique la fin de l'exo et laisse quelques lignes en blanc après.
+    if correction:	# Si la valeur d'entrée "correction vaut True", la correction est rajouté en bas en rouge.
+	TeXexo.append(u"\\begin{cor}\n{\\color{red}")	
+	TeXexo.append(exo.corrige)	# BOULOT expliquer les mots-clés begin{} et end{}
 	TeXexo.append(u"}\n\\end{cor}\n\\bigskip")
     return TeXexo
 
@@ -96,6 +96,9 @@ au travers du module openCV de Python.
 """
     symb=""    
     for i in range(nmax-len(n)):
+    	# on met des cases blanches au début pourqu'il y ait nmax carrés.
+    	
+    	
         symb=symb+u"\\Box"
     for i in n:
         if i=='1':
@@ -344,6 +347,7 @@ C'est par ailleurs la seule fonction utilisant Random pour vraiment faire interv
 	ret = list()
 	for i in range(ntotal):
 		ret.append(random.sample(range(taillebanque),taillesample))
+		# random.sample(ens,m) = tire m nombres distincts de l'ensemble "ens".  
 	return ret
 
 def genererQcm(args):
