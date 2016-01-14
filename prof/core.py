@@ -27,8 +27,11 @@ sepCodeExo = "%%%codeExo\n"
 sepNom = "%%%nomQCM\n"
 sepTexte = "%%%texteQCM\n"
 
-caseVide = "case_vide.jpg"
-dimCaseVide = cv2.imread(caseVide,0).shape[::-1]
+# On doit pouvoir reconnaitre des cases numérisés pour pouvoir:
+	# - reconnaitre un questionnaire numérisé par son code de carrés
+	# - évaluer la réponse donnée par une élève (les cases qu'il a noircis)
+caseVide = "case_vide.jpg"	 # le chemin d'une image d'une case vide
+dimCaseVide = cv2.imread(caseVide,0).shape[::-1]	
 sep=cv2.imread("sep.jpg",0)
 pts=[cv2.imread("pt1.jpg",0),cv2.imread("pt2.jpg",0),cv2.imread("pt3.jpg",0),]
 zones=[[(1000,1700),(0,400)],[(1300,1700),(2100,2400)],[(0,400),(2100,2300)]]
