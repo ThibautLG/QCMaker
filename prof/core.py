@@ -19,13 +19,13 @@ import numpy as np	# les fonctions mahtématiques pour python: la troncature, , 
 import cv2		# appliqué pour reconnaitre des éléments sur les feuilles numérisées (cases remplies, balises)
 from prof.models import *  # La base de données, donc les qcm, les exos, les copies des élèves, et ainsi de suite.
 import codecs		# Ouverture des fichiers pour lire ou pour les mettre à jour en écrivant dedans.
+#variables utilisée
 
-#variables utilisées
-
-sepTeXExos = "%%%exos\n"
-sepCodeExo = "%%%codeExo\n"
-sepNom = "%%%nomQCM\n"
-sepTexte = "%%%texteQCM\n"
+# Les balises pour le positionnement d'une valeur d'un jeu de données qui représente un QCM.
+sepTeXExos = "%%%exos\n"	# pour les exos, qui se composent à leur tour chacun de plusieurs objets.
+sepCodeExo = "%%%codeExo\n"	
+sepNom = "%%%nomQCM\n"		# pour le nomTex du qcm
+sepTexte = "%%%texteQCM\n"	# pour le texteTex du qcm, (quelques mots sur les moyens permis).
 
 # On doit pouvoir reconnaitre des cases numérisés pour pouvoir:
 	# - reconnaitre un questionnaire numérisé par son code de carrés
@@ -92,18 +92,13 @@ ntosymb(4,"110") 	renvoie le code de	blanc, noir, noir, blanc
 
 Avec cette suite de cases, on peut produire un "code de carrés" au moyen de laquelle
 un QCM peut être reconnu par des les fonctions décrites dans Core,
-au travers du module openCV de Python.
-
-
-
+au travers du module openCV (cv2) de Python.
 """
     symb=""    
     for i in range(nmax-len(n)):
     	# on met des cases blanches au début pourqu'il y ait nmax carrés.
-    	
-    	
         symb=symb+u"\\Box"
-    for i in n:
+    for i in n:		# à titre d'exemple : déduit de "1100" la suite de cases "noire, noire, blanche, blanche"
         if i=='1':
             symb=symb+u"\\blacksquare"
         if i=='0':
@@ -115,8 +110,8 @@ def genererTeXHTML(exo,template):
 
 """
 entrée:		un objet de type CoreExo
-		un gabarit HTML (template)
-sortie:		Une liste de chaînes, en partie code TeX, en partie code HTML.
+		un gabarit Tex (template)
+sortie:		Une liste de chaînes, en code Tex.
 
 Les composants de la liste, s'ils sont mis bout à bout, 
 forment le gabarit avec les éléments de l'exo insérés aux bons endroits.
@@ -139,8 +134,8 @@ La fonction est appelée dans genererSvg où le code sera traité plus loin.
 def genererTeXQcmPreview(qcm,template):
 """
 entrée:		un objet de type CoreQcm
-		un gabarit HTML (template)
-sortie:		Une liste de chaînes, en partie code TeX, en partie code HTML.
+		un gabarit Tex (template)
+sortie:		Une liste de chaînes, en code tex.
 
 Les composants de la liste, s'ils sont mis bout à bout, 
 forment le gabarit avec les éléments de l'aperçu de QCM insérés aux bons endroits.
