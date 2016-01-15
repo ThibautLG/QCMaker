@@ -11,7 +11,7 @@
 import sys			
 import random		# pour tirer des exos aléatoirement, et pour les identifiants des qcm
 import io			
-import subprocess as sp	# pour appliquer le compilateur LaTex pour produire des énoncés mathématiques.
+import subprocess as sp	# pour appliquer les logiciels "extérieures."
 import os		# permet la gestion des fichiers, au travers du code Python. (supprimer, créer des dossiers.)
 import time			
 import shutil as sh	# appelé une seule fois pour copier un dossier.	
@@ -19,6 +19,21 @@ import numpy as np	# les fonctions mahtématiques pour python: la troncature, , 
 import cv2		# appliqué pour reconnaitre des éléments sur les feuilles numérisées (cases remplies, balises)
 from prof.models import *  # La base de données, donc les qcm, les exos, les copies des élèves, et ainsi de suite.
 import codecs		# Ouverture des fichiers pour lire ou pour les mettre à jour en écrivant dedans.
+
+# Sur Subprocess:
+# Je me permets ici de m'étendre sur Subprocess parce que son fonctionnement n'est pas simple.
+# Dans le présent fichier, Subprocess sert à faire intervenir trois fonctionnalités:
+#	- le compilateur de LaTex pour convertir le code de LaTex en pdf lisible (en gerererSvg, genererSvgQcm)
+#	- la fonctionnalité pdfToCairo d'Ubuntu pour convertir le pdf en svg (en genererSvg, genererSvgQcm)
+#	- le "fusionneur de pdf" pdfunite d'Ubuntu (en genererQcm) 
+#	- convert (à finir BOULOT)
+# On applique trois fonctions (call, check_output, check_call) qui ont à peu près la même signature:
+# nomFonctionSp(chaîne nom de la fonctionnalité extérieure, chaîne(s) des chemin(s) des argument(s))
+# Quelques mots sur le fonctionnement de chacun:
+# 	-check_output regarde s'il est permis d'appliquer le logciel extérieure et lance une erreur sinon
+#	-call ne fait rien d'autre qu'appliquer.
+#	-check_call (BOULOT: ça fait quoi?)
+)
 #variables utilisée
 
 # Les balises pour le positionnement d'une valeur d'un jeu de données qui représente un QCM.
@@ -262,6 +277,7 @@ qui permet d'appliquer des logiciels de l'extérieur et de récupérer des erreu
 	    f.write(ligne.decode())	# L'en-tête en morceau est "recollé" dans un fichier.
     try:	# La suite ressemble trait pour trait au la suite de genererSvg
 	 sp.check_output(['pdflatex','-output-directory',dossier,dossier+'/qcm-prev-'+str(qcm.id)+'.tex'])
+	 # Pour plus de détails sur sp, faites cntrl + f "sur Subprocess"
 	 sp.call(['pdftocairo','-svg','-l','1',dossier+'/qcm-prev-'+str(qcm.id)+'.pdf',dossier+'/qcm-prev-'+str(qcm.id)+'.svg'])
    	 os.remove(dossier+'/qcm-prev-'+str(qcm.id)+'.aux')
  	 os.remove(dossier+'/qcm-prev-'+str(qcm.id)+'.log')
@@ -286,7 +302,10 @@ entrée:		Une paire dont:
 sortie:		aucune
 
 Dans un premier temps la fonction essaie de faire une arborescence de dossiers ayant le nom renseigné,
-afin d'enregistrer le pdf que va produire la fonction.
+afin d'enregistrer ce que va produire la fonction.
+À la fin, on produit pour chaque version un fichier pour pouvoir imprimer plus facilement.
+Chacun de ces fichiers sont sauvegardé dans l'arborecence qui a été faite au départ.
+Le champs de modèle du qcm "generation", en fait l'étape où se trouve la génération, est mise à 2.
 """
     idqcm=args[0]
     dossier=args[1]
@@ -306,9 +325,9 @@ afin d'enregistrer le pdf que va produire la fonction.
     print(os.getcwd())		# cwd = Current Working Directory
     template="template.tex"	
     pdfuniteArg=list()		# Ici on mettre tous les chemin des pdf produits qu'on unira plus tard.	
-    pdfuniteArg.append('pdfunite')	# Il s'agit bien du mot anglais unite, pas d'unité
-    paquet=1
-    i=0			# i va servir à numéroter les pdfs qu'on produit.
+    pdfuniteArg.append('pdfunite')	# Ce mot-clé montre quelle fonctionnalité extérieure doit être appelée.
+    paquet=1				# faites cntrl + p "sur subprocess" pour le pourquoi du comment
+    i=0			# i va servir à numéroter les pdfs qu'on p roduit.
     while qcm.coreqcmpdf_set.filter(paquet=paquet):	# tant qu'il y a des qcmpdf pour le paquet donné
         asupprimer=list() # recense les fichiers (pdf,tex) faits par le compilateur LaTex qui deviendront inutiles. 
         for qcmpdf in sorted(qcm.coreqcmpdf_set.filter(paquet=paquet), key=lambda r: int(r.id)):
@@ -322,22 +341,21 @@ afin d'enregistrer le pdf que va produire la fonction.
             asupprimer.append(dossier+'/originaux/exos'+str(i)+".pdf")	
             os.remove(dossier+'/originaux/exos'+str(i)+".aux")	# Si on peut compiler, pas besoin de garder ces deux fichiers.
             os.remove(dossier+'/originaux/exos'+str(i)+".log")	
-            pdfuniteArg.append(dossier+'/originaux/exos'+str(i)+'.pdf')	# On ajoute un des pdf qu'on veut enchaîner.
-        pdfuniteArg.append(dossier+"/originaux/exos-"+str(paquet)+'.pdf')
-        if len(pdfuniteArg) > 3:
-            sp.call(pdfuniteArg)
-        else:
+            pdfuniteArg.append(dossier+'/originaux/exos'+str(i)+'.pdf')	# ajout aux pdf qu'il faudra fusionner.
+        pdfuniteArg.append(dossier+"/originaux/exos-"+str(paquet)+'.pdf') # le nom que le devra porter le fichier uni.
+        if len(pdfuniteArg) > 3:	# BOULOT: Qu'y a-t-il donc de si particulier au nombre 3?
+            sp.call(pdfuniteArg)	# fait intervenir une "pdfunite" d'Ubuntu pour unir les pdf.
+        else:				# faites cntr + f "sur subprocess" pour le pourquoi du comment.
             sh.copy(dossier+'/originaux/exos'+str(i)+'.pdf',dossier+"/originaux/exos-"+str(paquet)+'.pdf')
-        for fichier in asupprimer:
-            os.remove(fichier)
-	# maintenant le jour n'est joué que pour le premier paquet!
-	# BOULOT: 	Tirer au clair la suite du déroulement du procédé. 
+            # sh.copy(chemin1,chemin2) copie le fichier de chemin1 dans le fichier du chemin2, pour faire court. 
+        for fichier in asupprimer:	# On peut supprimer tous les fichier, on a déjà le fichier uni.
+            os.remove(fichier)		
 	
-        pdfuniteArg=list()
-        pdfuniteArg.append('pdfunite')
-        paquet+=1
+        pdfuniteArg=list()	# Le tableau des pdf f à unir est vidé pour traiter le nouveau paquet.
+        pdfuniteArg.append('pdfunite')	# l'étiquette du fusionneur est rajouté
+        paquet+=1	# On passe au paquet suivant et on recommence
     qcm.generation=2	# La génération est en fait le stade où se trouve la génération d'un qcm.
-    qcm.save()
+    qcm.save()		# On a produits le fichier uni pour chaque paquet, du coup on est au deuxième stade.
 
 def randomSample(taillesample,taillebanque,ntotal):
 """
@@ -368,15 +386,25 @@ entrée:		une liste
 		 exemple: pour 200 qcm ont peut choisir "30, 70, 100"
 		 donc un paquet de 30 qcm, un paquet de 70 et un de 100.
 sortie:		aucune valeur.
+
 Même si cette fontion ne renvoie ne renvoie rien elle fait beaucoup au niveau des modèles:
-Les champs du QCM pris en entrée sont mis à jour sont mis à jour  
+Les champs du nom du QCM pris en entrée sont mis à jour, cela pour lui donner ses valeurs.
+Cette fonction fait donc un nouveau qcm dans la base de données, sans rien faire d'autre.
+Les pdf ne sont que produits et rendus imprimables dans genererPdf.
+
+Le travail pris en charge par cette fonction consiste à:
+	-compter le nombre de qcm qu'il faut faire, à partir du nombre de paquets par version.
+	-produire les codes de carrés pour chaque Qcm
+	-tirer aléatiorement les exos des banques données dans l'objet NbExos
+	-l'ordre des exos tel que trouvé dans l'objet NbExos est enregistré dans l'objet qcm.
+
 """
 
     qcm=args[0]
     nbpdfstexte=args[1] # une chaîne qui montre comment les versions sont réparties en paquets.
     nbpdfstexte=nbpdfstexte.split(',') # on en fait une liste.
     nbpdfs=list()	
-    ntotal=0		# On aditionne les tailles de tous les paquest pour compter le nombre de qcm requis.
+    ntotal=0		# On aditionne les tailles de tous les paquets pour compter le nombre de qcm requis.
     for nb in nbpdfstexte:
         nbpdfs.append(int(nb))
         ntotal+=int(nb)
@@ -421,11 +449,11 @@ Les champs du QCM pris en entrée sont mis à jour sont mis à jour
                 for i in r:	# Du coup on parcourt ici tous les numéros d'exos d'un tirage en particulier.
                     exoqcmpdf = CoreExoQcmPdf(qcmpdf=qcmpdf,exo=listeexos[i],position=position)
                     exoqcmpdf.save()	# Ajout et sauvegarde d'un objet qui rattache une copie à une banque. 
-		    position += 1	# (BOULOT à préciser)
-
+		    position += 1	# Position est l'endroit où un exo doit être mis.
+					# (En parlant de l'ordre des exos dans un fichier QCM.)
 		numerobanque += 1
             numero+=1
-    print('gQCM nmax:'+str(qcm.nmax)+' ou '+str(nmax))		# BOULOT: à éclaircir.
+    print('gQCM nmax:'+str(qcm.nmax)+' ou '+str(nmax))	
 
 ##### correction
 
