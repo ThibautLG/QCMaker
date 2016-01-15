@@ -109,7 +109,7 @@ ntosymb(5,"1") 		renvoie le code de	blanc, blanc, blanc, blanc, blanc
 ntosymb(4,"110") 	renvoie le code de	blanc, noir, noir, blanc
 
 Avec cette suite de cases, on peut produire un "code de carrés" au moyen de laquelle
-un QCM peut être reconnu par des les fonctions décrites dans Core,
+un QCM rempli peut être reconnu par des les fonctions décrites dans Core,
 au travers du module openCV (cv2) de Python.
 """
     symb=""    
