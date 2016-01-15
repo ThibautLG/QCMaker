@@ -32,7 +32,7 @@ import codecs		# Ouverture des fichiers pour lire ou pour les mettre à jour en 
 # Quelques mots sur le fonctionnement de chacun:
 # 	-check_output regarde s'il est permis d'appliquer le logciel extérieure et lance une erreur sinon
 #	-call ne fait rien d'autre qu'appliquer.
-#	-check_call (BOULOT: ça fait quoi?)
+#	-check_call semble être mélange des deux.
 )
 #variables utilisée
 
@@ -468,6 +468,7 @@ class Copie():
 			for c in pt:
 				ptsstr.append(str(c))
 		return ','.join(ptsstr)
+		# Ca semble faire une chaine de de
 	
 	#méthode pour lire les chiffres du code (la suite de 0101 en haut à droite)
 	def lireChiffres(self):
