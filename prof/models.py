@@ -61,18 +61,23 @@ class CoreQcmPdf(models.Model):
 		cases = [(int(case.split(',')[1]),int(case.split(',')[2])) for case in cases if case.split(',')[0]==str(page)]
 		print('Cases: '+str(cases))
 		return cases
+	# X1 Il faut peut-être changer quelque chose ici:
 	def getnote(self):
 		nbreponses = {}
 		irep = 0
 		note = 0.0
 		for qexo in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=self), key=lambda r: int(r.position)):
 			for reponse in sorted(qexo.exo.corereponse_set.all(), key=lambda r: int(r.position)):
-				try:
+				try:	
+					# rqe: Le "nom" de la réponse est une étiquette qui indique la valeur d'une réponse.
+					# Les étiquettes utilisées sont "v" (vrai) et "f" (faux)
 					nbreponses[reponse.nom]+=int(self.reponses[irep])
 				except Exception, er:
 					nbreponses[reponse.nom]=int(self.reponses[irep])
 				irep+=1
 			note += (nbreponses['v']+nbreponses['f']==1)*(1*nbreponses['v']-0.5*nbreponses['f'])
+			# à remplacer peut-être par une ligne comme celle-ci:
+			# note += (nbreponses['v']+nbreponses['m']+nbreponses['f']==1)*(1*nbreponses['v']-0.5*nbreponses['f'])
 			nbreponses = {}
 		return max(note,0)
 	def getreponses(self):
