@@ -80,7 +80,7 @@ def exo2tex(exo,correction):
 		if reponse.nom == "v" and correction:	# la bonne réponse est affiché en vert si correction=True.
 			TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
 #X1		# if reponse.nom == "m" and correction:
-			# TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
+			# TeXexo.append(u"\item {\\color{yellow}"+reponse.texte+u"}\n")
 		else:	# Sinon on ne précise rien sur la couleur de l'affichage
 			TeXexo.append(u"\item "+reponse.texte+u"\n")
    	TeXexo.append(u"\\end{itemize}\end{minipage}\n") # Indique la fin de la mise en forme particulière des réponses. 
