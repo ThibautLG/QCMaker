@@ -79,6 +79,8 @@ def exo2tex(exo,correction):
     		# à chaque tour de boucle on ajoute une question.
 		if reponse.nom == "v" and correction:	# la bonne réponse est affiché en vert si correction=True.
 			TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
+#X1		# if reponse.nom == "m" and correction:
+			# TeXexo.append(u"\item {\\color{green}"+reponse.texte+u"}\n")
 		else:	# Sinon on ne précise rien sur la couleur de l'affichage
 			TeXexo.append(u"\item "+reponse.texte+u"\n")
    	TeXexo.append(u"\\end{itemize}\end{minipage}\n") # Indique la fin de la mise en forme particulière des réponses. 
@@ -100,7 +102,7 @@ Sortie:		une chaîne qui contient le code LaTex d'une suite de carrés noirs ou 
 
 Pour chaque 1, un carré noir est ajouté à la suite dont obtient le code LaTex.
 Pour chaque 0, un carré blanc est ajouté.
-Pour finir, au début de la suite bdes carrés blancs sont ajoutés 
+Pour finir, au début de la suite des carrés blancs sont ajoutés 
 de telle sorte que la suite ait nmax cases.
 
 Quelques exemples:
