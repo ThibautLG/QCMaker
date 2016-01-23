@@ -16,6 +16,15 @@ import prof.imp as imp
 
 
 def is_prof(nom):
+	"""
+	entrée:		le chaîne d'un nom d'un enseignant
+	sortie:		vrai ssi le nom est le nom d'un des enseignant de math.
+	
+	Cette méthode est utilisé pour accorder à l'utilisateur certains droits d'accès.
+	Ainsi, on décide si un l'utilisateur a le droit d'agir comme un prof ssi:
+	is_prof(str(request.user.username))
+	"""
+	
 	listeprof=['tle-gouic','jliandrat','cpouet','gchiavassa']
 	if nom in listeprof:
 		return True
@@ -161,6 +170,19 @@ def image(request,id_cc,page):
 	
 	
 def ehome(request):	# La page d'accueil pour les élèves. BOULOT: Essayer de comprendre à quoi il sert.
+
+	"""
+	AVERTISSEMENT: je suis loin de bien comprendre ce code, pensez-y.
+	
+	entrée:		Une requête (provenant d'un élève)
+	sortie:		réponse qui lui permet de voir la copie qu'il voulait voir.
+	
+	Cette vue est censé être à la base de la page d'accueil pour les élèves. 
+	
+	Elle permet à un élève de voir sa copie en le saisissant dans une boite.
+	Si jamais une erreur se produit, suite à la saisie de l'élève, il en est mis au courant,
+	au moyen d'un des messages d'erreur, suivant ce qui empêche l'affichage de sa copie.
+	"""
 	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
@@ -209,6 +231,18 @@ def ehome(request):	# La page d'accueil pour les élèves. BOULOT: Essayer de co
 	return render(request, 'ehome.html', locals())
 	
 def home(request):
+	
+	"""
+	AVERTISSEMENT: je suis loin de bien comprendre ce code, pensez-y.
+	
+	entrée:		Une requête (provenant d'un enseignant)
+	sortie:		... (BOULOT)
+	
+	Cette vue est censé être à la base de la page d'accueil pour les enseignants. 
+	
+	Elle permet à un enseignant de faire presque n'importe quoi avec les QCM.
+	La longueur de la méthode est due au grand nombre de formulaires qu'il peut remplir.
+	"""
 
 	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
 		return redirect('django_cas.views.login')
@@ -229,13 +263,14 @@ def home(request):
 	listebanques=list()
 	for banq in listebanquestemp:
 		listebanques.append((banq.id,banq.nom))
-	formBanque.setListe(listebanques)	
-	
+	formBanque.setListe(listebanques) # Cette ligne définit l'éventail de banques
+						# L'utilisateur doit en chosir une.
 	if request.method == 'POST':	# Si la requête a pour but de modifier
-		if formBanque.is_valid():	
+		if formBanque.is_valid(): 	# Si l'utilisateur a bien choisi sa banque.
 			print('ok')
 			request.session['banque'] = formBanque.cleaned_data['banque']
 			return redirect('prof.views.banque')
+			# L'utilsateur 
 		elif formNouvelleBanque.is_valid():	# Si ce formulaire est bien rempli.
 			print(pr)
 			banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom=formNouvelleBanque.cleaned_data['nouvellebanque'])
@@ -246,6 +281,8 @@ def home(request):
 	formNQCM = NouveauQCM()
 	formBanque = ChoixBanque()
 	formChoix = QCMChoix()
+	
+	
 	formNouvelleBanque = AjouterBanque()
 
 	listeqcms = sorted(pr.coreqcm_set.all(), key=lambda r: int(r.id),reverse=True)
@@ -260,7 +297,6 @@ def home(request):
 		listebanques.append((banq.id,banq.nom))
 	formBanque.setListe(listebanques)	
 		
-	
 	return render(request, 'home.html', locals())
 
 def qcmaker(request):
@@ -274,7 +310,8 @@ def qcmaker(request):
 	pr=Enseignant.objects.get(nom=nom)
 	dossier = 'media/ups/'+str(pr.id)
 
-	#on charge tous les formulaires
+	#on charge tous les formulaires 
+	#(request.POST est le dictionnaire des données envoyées par l'utilisateur.)
 	formGenerer = Generer(request.POST)
 	formNQCM = NouveauQCM(request.POST) 
 	formNEntete = Entete(request.POST)
