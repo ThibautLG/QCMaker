@@ -131,7 +131,7 @@ def svg(request,id_svg, prefix):
 def image(request,id_cc,page):
 	
 	"""
-	entrée:		requête
+	entrée:		requête (provenant soit par un élève, soit par un enseignant.)
 			l'identifiant d'une copie, faite par une élève, que l'utilisateur veut voir.
 			le numéro de la page que l'utilisateur veut voir.
 	sortie:		réponse aboutissant soit téléchargement si l'utilisateur y le droit, soit un refus d'accès.
@@ -189,18 +189,18 @@ def ehome(request):	# La page d'accueil pour les élèves. BOULOT: Essayer de co
 	nom=str(request.user.username)
 	el,nouveleleve=Eleve.objects.get_or_create(nom=nom)	# nouveleleve vaut True ssi el a été créé.
 	if request.method == 'POST':
-		formAssign=AssignerCopie(request.POST)		# laisse l'utilisateur saisir un numéro de copie
+		formAssign=AssignerCopie(request.POST)		# laisse l'élève saisir un numéro de copie
 		if formAssign.is_valid():			# Si l'utilisateur n'a pas saisi n'importe quoi
 			try:	# Ce "try" récupère tout le jeu de données qui se rattache au numéro saisi. 
 				qcmid,numcopie=formAssign.cleaned_data['numcopie'].split('-')
-				qcmid=int(qcmid)		
-				numcopie=int(numcopie)
+				qcmid=int(qcmid)		# Ici le numéro qu'il rentre est coupé en deux.
+				numcopie=int(numcopie)		
 				codes=range(100000)		# encore ces cinq lignes décrites au début.
-				random.seed(float('0.'+str(qcmid)))	
+				random.seed(float('0.'+str(qcmid))) # Sert à trouver le bon code.		
 				random.shuffle(codes)		
 				random.shuffle(codes)
 				random.shuffle(codes)
-				numcopie = codes.index(numcopie)
+				numcopie = codes.index(numcopie)	
 				qcm = CoreQcm.objects.get(id=qcmid)
 				qcmpdf = CoreQcmPdf.objects.get(qcm=qcm,numero=numcopie)
 			except:
@@ -224,10 +224,10 @@ def ehome(request):	# La page d'accueil pour les élèves. BOULOT: Essayer de co
 
 	#creation de la liste des copies de l'élève
 	listecps  = list()
-	for cp in [cc for cc in CoreCopie.objects.all() if cc.eleve == el]:
+	for cp in [cc for cc in CoreCopie.objects.all() if cc.eleve == el]:	# 
 		tform = VoirCopie(initial={'idcopieavoir':cp.id})
 		listecps.append({'id':cp.id,'note':cp.qcmpdf.getnote(),'nom':cp.qcmpdf.qcm.nomTeX,'formvoir':tform})
-	formAssign=AssignerCopie()
+	formAssign=AssignerCopie()	# Que fait donc ce formulaire vide à la fin?
 	return render(request, 'ehome.html', locals())
 	
 def home(request):
@@ -246,17 +246,17 @@ def home(request):
 
 	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
 		return redirect('django_cas.views.login')
-	nom=str(request.user.username)
+	nom=str(request.user.username)	
 	print(nom)
-	if not is_prof(nom):
-		return redirect('prof.views.ehome')
+	if not is_prof(nom):	# Si l'utilisateur n'est pas d'enseignant alors il est traité comme élève.
+		return redirect('prof.views.ehome')		
 	pr,nouveauprof = Enseignant.objects.get_or_create(nom=nom)
-	if nouveauprof:	
+	if nouveauprof:
 		try:
 			os.mkdir('media/ups/'+str(pr.id)) # tentative de créer un dossier.
 		except:
 			print('Erreur lors de la création du nouveau dossier prof')
-	# Aperçu de formulaires qui s'affichent sur l'écran du prof, pour la gestion du système.
+	# Récupère des données issues d'un formulaire qui a été rempli par l'utilisateur.
 	formNouvelleBanque = AjouterBanque(request.POST)
 	formBanque = ChoixBanque(request.POST)
 	listebanquestemp=pr.corebanque_set.all()
@@ -267,20 +267,20 @@ def home(request):
 						# L'utilisateur doit en chosir une.
 	if request.method == 'POST':	# Si la requête a pour but de modifier
 		if formBanque.is_valid(): 	# Si l'utilisateur a bien choisi sa banque.
-			print('ok')
+			print('ok')		
 			request.session['banque'] = formBanque.cleaned_data['banque']
 			return redirect('prof.views.banque')
 			# L'utilsateur 
 		elif formNouvelleBanque.is_valid():	# Si ce formulaire est bien rempli.
 			print(pr)
 			banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom=formNouvelleBanque.cleaned_data['nouvellebanque'])
-			banque.save()
-			request.session['banque'] = banque.id
-			return redirect('prof.views.banque')
-
+			banque.save()	# On crée une nouvelle banque avec les données du prof et celles qu'il a saisies.
+			request.session['banque'] = banque.id	# L'identifiant de la banque est rangé dans la "session"
+			return redirect('prof.views.banque')	# pour être sortie dans vue qui s'appelle "banque."
+	
 	formNQCM = NouveauQCM()
-	formBanque = ChoixBanque()
-	formChoix = QCMChoix()
+	formBanque = ChoixBanque()	#
+	formChoix = QCMChoix()	# Liste de choix dont les options doivent encore être précisées.
 	
 	
 	formNouvelleBanque = AjouterBanque()
@@ -362,6 +362,7 @@ def qcmaker(request):
 
 		#si suppression de banque d'exo du qcm
 		elif formDel.is_valid():
+			
 			print('On efface un nbexos')
 			td=CoreNbExos.objects.get(id=formDel.cleaned_data['banqueaeff'])
 			td.delete()
