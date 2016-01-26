@@ -17,7 +17,7 @@ import prof.imp as imp
 
 def is_prof(nom):
 	"""
-	entrée:		le chaîne d'un nom d'un enseignant
+	entrée:		la chaîne d'un nom d'un enseignant
 	sortie:		vrai ssi le nom est le nom d'un des enseignant de math.
 	
 	Cette méthode est utilisé pour accorder à l'utilisateur certains droits d'accès.
@@ -306,8 +306,8 @@ def qcmaker(request):
 	Pour ce faire il doit rentrer une suite de nombres de paquets de versions. (par ex. 10,20,15)
 	Il a aussi a préciser un qcm, soit en en créant un, soit en choisissant un des qcm de la banque.
 	Quand une erreur se produit, l'enseignant rentre souvent dans la page d'accueil, pour recommencer.
-	
-	
+	Si tout va bien, et les conditions plus haut ne sont pas remplies, 
+	l'utilisateur atterrit dans la page d'accueil, la génération du qcm démarré.  
 	"""
 	
 	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
@@ -449,14 +449,22 @@ def qcmaker(request):
 		listebanquesqcm.append({'nom':nb.banque.nom,'nb':nb.nb,'formDel':tform})
 	formNEntete = Entete()
 	formNEntete.setFields(qcm)
-	try:
+	try:					# bloc inutile.
 		formGenerer.erreurici
 	except Exception,er:
-		formGenerer = Generer()
+		formGenerer = Generer()			
 	return render(request, 'qcmaker.html', locals())
 
 	
 def qcmanage(request):
+	
+	"""
+	Cette page est peut etre atteinte par un utilisateur quand il vient de démarrer la génération d'un qcm.
+	
+	Quand il y entre on regarde d'il est encore sur son compte (dans le cas contraire il doit se loguer)
+	et on regarde s'il est vraiment un enseignant (sinon il rentre dans le page d'accueil des élèves.)
+	
+	"""
 	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
@@ -481,8 +489,10 @@ def qcmanage(request):
 			return telecharger(request,dossier+'/'+str(qcm.id)+'/originaux/'+formTelecharger.cleaned_data['fichieratel'])
 		#si upload de copie
 		elif formAjoutCopies.is_valid():
+			# un nouvel objet copie est faite avec les données saisies. 
 			cps=CoreCopies(qcm=qcm,fichier=formAjoutCopies.cleaned_data['fichiercp'],nom=str(formAjoutCopies.cleaned_data['fichiercp']))
-			cps.save()
+			# la copie est corrigé en tache de fond.
+			cps.save()	# les copies sont sauvegardées.
 			try:
 				BgJob(core.correctionCopies,(qcm.id,cps))
 			except Exception, er:
