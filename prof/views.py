@@ -304,7 +304,10 @@ def qcmaker(request):
 	Ensuite, si l'utilisateur est parait etre un éleve, il est renvoyé sur la page d'accueil des éleves.
 	Si l'utilisateur est un enseignant, alors il peut démarrer la génération d'un qcm (a préciser)
 	Pour ce faire il doit rentrer une suite de nombres de paquets de versions. (par ex. 10,20,15)
-	Il a aussi a préciser un qcm, soit en en créant un, soit en choisissant un des qcm de la banque. 
+	Il a aussi a préciser un qcm, soit en en créant un, soit en choisissant un des qcm de la banque.
+	Quand une erreur se produit, l'enseignant rentre souvent dans la page d'accueil, pour recommencer.
+	
+	
 	"""
 	
 	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
@@ -430,7 +433,7 @@ def qcmaker(request):
 		return redirect('prof.views.qcmanage')
 
 	#on remplit la liste des banques d'exos
-	formAjoutBanque = ChoixBanqueQCM()		# formulaire vide pourque le prof puisse choisir une banque
+	formAjoutBanque = ChoixBanqueQCM()		# formulaire vide pour que le prof puisse choisir une banque
 	listebanquestemp=pr.corebanque_set.all()
 	listebanques=list()
 	for banq in listebanquestemp:
