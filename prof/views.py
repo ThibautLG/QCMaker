@@ -298,6 +298,15 @@ def home(request):
 
 def qcmaker(request):
 	
+	"""
+	Quand la commande de généerer un qcm a été donné, l'utilisateur entre dans qcmanage.
+	Si l'utilisateur ne s'est pas encore logué il est renvoyé sur la page ou il peut le faire.
+	Ensuite, si l'utilisateur est parait etre un éleve, il est renvoyé sur la page d'accueil des éleves.
+	Si l'utilisateur est un enseignant, alors il peut démarrer la génération d'un qcm (a préciser)
+	Pour ce faire il doit rentrer une suite de nombres de paquets de versions. (par ex. 10,20,15)
+	Il a aussi a préciser un qcm, soit en en créant un, soit en choisissant un des qcm de la banque. 
+	"""
+	
 	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
@@ -318,7 +327,7 @@ def qcmaker(request):
 	listeChoix = list()
 	for lqcm in listeqcms:
 		listeChoix.append((lqcm.id,lqcm.nom))
-	formChoix = QCMChoix(request.POST)	# L'utilisateur choisit un qcm parmi dans la liste qu'il trouve.
+	formChoix = QCMChoix(request.POST)	# L'utilisateur choisit un qcm parmi celles dans la liste.
 	formChoix.setListe(listeChoix)		
 	formTelecharger = Telecharger(request.POST) 	# formulaire vieilli 	
 	formEffacer = Effacer(request.POST)		# formulaire vieilli 	
@@ -340,36 +349,41 @@ def qcmaker(request):
 			# récupère le qcm avec le nom saisi dans le formulaire, et crée s'il n'y en a pas.  
 			if creation:	
 				qcm.save()	# sauvegarde le qcm s'il vient d'être créé.
-			request.session['qcm']=qcm.id
+			request.session['qcm']=qcm.id	# sauvegarde de l'identifiant du qcm
+			# Le morceau ci-dessous regarde si une erreur de produit pendu le rendu des formules.
 			errtex = core.genererSvgQcm(qcm,dossier)
 			if not errtex == 0:
 				qcm.erreurtex = True
 			else: 
 				qcm.erreurtex = False
-			qcm.save()
+			qcm.save()	# Sauvegarde de du booléen qui q été fait. 
 		
 		#si QCM existant
 		elif formChoix.is_valid():
 			print('Formulaire de choix de QCM valide')
-			try:
+			try:	# tentative de récupérer le qcm voulu
 				qcm=CoreQcm.objects.get(prof=pr,id=int(formChoix.cleaned_data['qcm']))
-				request.session['qcm']=qcm.id
-			except Exception, er:
+				request.session['qcm']=qcm.id	# sauvegarde de l'identifiant trouvé.
+			except Exception, er:		
 				print("Erreur : ",er)
-				return redirect('prof.views.home')	
+				return redirect('prof.views.home')
+				# Si le qcm n'a pas été trouvé l'utilisateur retombe sur la page d'accueil.
 
 		#si suppression de banque d'exo du qcm
 		elif formDel.is_valid():
 			
 			print('On efface un nbexos')
+			# On répère l'objet que l'utilisateur voulait effacer.
 			td=CoreNbExos.objects.get(id=formDel.cleaned_data['banqueaeff'])
-			td.delete()
+			td.delete() # Enlevement de la base de données de cet objet.
+			#d  L'objet est de type nbexos et établit une liaison entre une banque et un qcm.
 			
 		#si ajout de banque
 		elif formAjoutBanque.is_valid():
+			# 
 			qcm=CoreQcm.objects.get(id=request.session['qcm'])
 			nbanque=CoreBanque.objects.get(prof=pr,id=formAjoutBanque.cleaned_data['banque'])
-			nbexos=formAjoutBanque.cleaned_data['nbexos']
+			nbexos=formAjoutBanque.cleaned_data['nbexos'] # le nombre d'exos rentré.
 			n=CoreNbExos(qcm=qcm,banque=nbanque,nb=nbexos,position=len(qcm.nbexos.all())+1)
 			n.save()
 		
