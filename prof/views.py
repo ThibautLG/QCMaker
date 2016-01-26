@@ -38,7 +38,8 @@ def genererCSVnotes(qcm):
 	Entrée: 	Un objet de type CoreQcm.
 	Sorie:		comme "produit secondaire", un chemin d'accès pour le fichier de notes.
 	
-	Met à jour "le" fichier de notes. Le fichier est un tableau dont les lignes sont agencées comme suit:
+	Met à jour le fichier de notes du qcm de l'enseignqnt. 
+	Le fichier est un tableau dont les lignes sont agencées comme suit:
 	numéro de qcm,    nom_élève,    note_élève
 	Si les corrigés pour le qcm ne sont pas dans la base de données, il ne se passe rien.
 	"""
@@ -63,7 +64,6 @@ def telecharger(request,objet):
 	sortie:		une réponse qui laisse l'utilisateur télécharger le fichier
 	
 	A aussi pour effet d'ajouter des informations à la bibliothèque META sur le fichier.
-	BOULOT: Fonctionnement encore à éclaircir, surtout XX2.
 	"""
 	if isinstance(objet,models.FileField):  # Fait en sorte que la fonction puisse gérer trois types.
 		the_file = objet.path		# un fichier comme attribut, et deux types de chaînes.
@@ -73,7 +73,7 @@ def telecharger(request,objet):
 		the_file = objet
 	filename = os.path.basename(the_file)
 	#QUESTION. Qu'est-ce qui se passe dans cette ligne?
-	response = HttpResponse(FileWrapper(open(the_file)),		#XX2
+	response = HttpResponse(FileWrapper(open(the_file)),
 				content_type=mimetypes.guess_type(the_file)[0])
 	response['Content-Length'] = os.path.getsize(the_file)
 	response['Content-Disposition'] = "attachment; filename=%s" % filename
@@ -115,7 +115,7 @@ def svg(request,id_svg, prefix):
 				if ok:
 					svg = "media/ups/"+str(exo.banque.prof.id)+"/"+prefix+"-"+str(id_svg)+".svg"
 			except Exception,er:
-				print('Erreur svg: '+str(er))  # QUESTION qu'est-ce que l'utilisateur voit de ça?
+				print('Erreur svg: '+str(er))  
 				return HttpResponse("Non disponible") # ce qui s'affiche pour l'utilisateur
 				
 				
@@ -239,9 +239,6 @@ def home(request):
 	sortie:		... (BOULOT)
 	
 	Cette vue est censé être à la base de la page d'accueil pour les enseignants. 
-	
-	Elle permet à un enseignant de faire presque n'importe quoi avec les QCM.
-	La longueur de la méthode est due au grand nombre de formulaires qu'il peut remplir.
 	"""
 
 	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
@@ -301,46 +298,46 @@ def home(request):
 
 def qcmaker(request):
 	
-	if not request.user.is_active:
+	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
-	if not is_prof(nom):
+	if not is_prof(nom):	# Si l'utilisateur n'est pas d'enseignant il est renvoyé sur la page d'accueil des élèves.
 		return redirect('prof.views.ehome')
 	
 	pr=Enseignant.objects.get(nom=nom)
 	dossier = 'media/ups/'+str(pr.id)
 
-	#on charge tous les formulaires 
-	#(request.POST est le dictionnaire des données envoyées par l'utilisateur.)
-	formGenerer = Generer(request.POST)
-	formNQCM = NouveauQCM(request.POST) 
-	formNEntete = Entete(request.POST)
+	# On charge tous les formulaires 
+	# Il s'agit d'un formulaire dans lequel l'utilisateur...
+	formGenerer = Generer(request.POST) # précise les tailles des paquets d'une meme version.	
+	formNQCM = NouveauQCM(request.POST) # précise le titre du nouveau QCM qu'il veut faire. 
+	formNEntete = Entete(request.POST)  # décrit l'en-tete, dans lequel figurent un nom suivi d'un texte.	
 
 	#on remplit la liste des QCMs (pour tester le formulaire de choix de QCM)
 	listeqcms = sorted(pr.coreqcm_set.all(), key=lambda r: int(r.id),reverse=True)
 	listeChoix = list()
 	for lqcm in listeqcms:
 		listeChoix.append((lqcm.id,lqcm.nom))
-	formChoix = QCMChoix(request.POST)
-	formChoix.setListe(listeChoix)
-	formTelecharger = Telecharger(request.POST)
-	formEffacer = Effacer(request.POST)
+	formChoix = QCMChoix(request.POST)	# L'utilisateur choisit un qcm parmi dans la liste qu'il trouve.
+	formChoix.setListe(listeChoix)		
+	formTelecharger = Telecharger(request.POST) 	# formulaire vieilli 	
+	formEffacer = Effacer(request.POST)		# formulaire vieilli 	
 	
-	#on remplit la liste des banques d'exos
-	formAjoutBanque = ChoixBanqueQCM(request.POST)
-	listebanquestemp=pr.corebanque_set.all()
+	#on remplit la liste des banques d'exos		
+	formAjoutBanque = ChoixBanqueQCM(request.POST)	# récupère le choix de banque.
+	listebanquestemp=pr.corebanque_set.all()	
 	listebanques=list()
-	for banq in listebanquestemp:
+	for banq in listebanquestemp:			
 		listebanques.append((banq.id,banq.nom))
-	formAjoutBanque.setListe(listebanques)
+	formAjoutBanque.setListe(listebanques)		# fixe l'ensemble de banques dans lequel le choix se fait.
 
 	formDel=EffacerBanque(request.POST)
-	if request.method == 'POST':  # S'il s'agit d'une requête POST
+	if request.method == 'POST':  # S'il s'agit d'une requête qui vise à modifier.
 	
 		#si nouveau QCM
-		if formNQCM.is_valid():
+		if formNQCM.is_valid():		
 			qcm,creation=CoreQcm.objects.get_or_create(prof=pr,nom=formNQCM.cleaned_data["titre"])
-			if creation:
+			if creation:	
 				qcm.save()
 			request.session['qcm']=qcm.id
 			errtex = core.genererSvgQcm(qcm,dossier)
@@ -418,12 +415,13 @@ def qcmaker(request):
 		return redirect('prof.views.qcmanage')
 
 	#on remplit la liste des banques d'exos
-	formAjoutBanque = ChoixBanqueQCM()
+	formAjoutBanque = ChoixBanqueQCM()		# formulaire vide pourque le prof puisse choisir une banque
 	listebanquestemp=pr.corebanque_set.all()
 	listebanques=list()
 	for banq in listebanquestemp:
 		listebanques.append((banq.id,banq.nom))
-	formAjoutBanque.setListe(listebanques)
+	formAjoutBanque.setListe(listebanques)		
+	# grace a cette ligne le prof peut choisir entre toutes les banques qui lui appartiennent.
 
 	#on remplit la liste des banques du qcm		
 	listebanquesqcmtemp = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
