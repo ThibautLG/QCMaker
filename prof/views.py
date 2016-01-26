@@ -337,8 +337,9 @@ def qcmaker(request):
 		#si nouveau QCM
 		if formNQCM.is_valid():		
 			qcm,creation=CoreQcm.objects.get_or_create(prof=pr,nom=formNQCM.cleaned_data["titre"])
+			# récupère le qcm avec le nom saisi dans le formulaire, et crée s'il n'y en a pas.  
 			if creation:	
-				qcm.save()
+				qcm.save()	# sauvegarde le qcm s'il vient d'être créé.
 			request.session['qcm']=qcm.id
 			errtex = core.genererSvgQcm(qcm,dossier)
 			if not errtex == 0:
