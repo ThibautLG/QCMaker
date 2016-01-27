@@ -73,6 +73,54 @@ Y'a aussi a lancer pour la mise en prod:
     mkdir static;
     python manage.py collectstatic
 
+Sous Windows :
+-------------
+
+1) Télécharger Anaconda :
+
+Windows64 https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda2-2.4.1-Windows-x86_64.exe
+
+Windows32 https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda2-2.4.1-Windows-x86.exe
+
+2) Importer le dossier QCMaker dans GitBash :
+    
+    git clone https://github.com/ThibautLG/QCMaker.git
+    
+3) Ajouter le fichier manage.py dans le dossier QCMaker
+
+    https://www.dropbox.com/s/5dbn82vzaksd50w/manage.py?dl=0
+    
+4) Installer cv2 :
+
+-Télécharger et extraire Opencv
+    
+    http://downloads.sourceforge.net/project/opencvlibrary/opencv-win/3.1.0/opencv-3.1.0.exe?r=http%3A%2F%2Fopencv.org%2F&ts=1453856522&use_mirror=netix
+    
+-Mettre le fichier opencv\build\python\2.7\x64\cv2.pyd dans le dossier anaconda2\Lib\site-packages
+
+-Installer le module
+
+    pip install cv2
+    
+5) Mettre la bonne version de django
+
+    pip install django==1.7
+    
+6) Aller dans QCMaker\qcm\settings.py et régler ALLOWED_HOSTS = ['*']
+
+7) Installer Django-cas :
+
+    pip install https://bitbucket.org/cpcc/django-cas/get/47d19f3a871f.zip
+    
+8) Créer dans QCMaker un dossier media\ups\1
+
+9) Etablir la base de données
+
+    python manage.py syncdb
+    
+10) Lancer le serveur
+    
+![myimage-alt-tag](http://img15.hostingpics.net/pics/501201runserver.jpg)
 
 Lancement
 ========
@@ -84,3 +132,6 @@ Au demarrage, il faut aussi lancer le worker:
 et pour un bug du serveur, s'assurer que:
 
     export LD_LIBRARY_PATH=/usr/local/lib/gcc48
+    
+    
+
