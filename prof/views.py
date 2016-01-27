@@ -169,11 +169,9 @@ def image(request,id_cc,page):
 			return HttpResponse("Non disponible") 
 	
 	
-def ehome(request):	# La page d'accueil pour les élèves. BOULOT: Essayer de comprendre à quoi il sert.
+def ehome(request):	# La page d'accueil pour les élèves.
 
 	"""
-	AVERTISSEMENT: je suis loin de bien comprendre ce code, pensez-y.
-	
 	entrée:		Une requête (provenant d'un élève)
 	sortie:		réponse qui lui permet de voir la copie qu'il voulait voir.
 	
@@ -233,11 +231,6 @@ def ehome(request):	# La page d'accueil pour les élèves. BOULOT: Essayer de co
 def home(request):
 	
 	"""
-	AVERTISSEMENT: je suis loin de bien comprendre ce code, pensez-y.
-	
-	entrée:		Une requête (provenant d'un enseignant)
-	sortie:		... (BOULOT)
-	
 	Cette vue est censé être à la base de la page d'accueil pour les enseignants. 
 	"""
 
@@ -275,10 +268,9 @@ def home(request):
 			request.session['banque'] = banque.id	# L'identifiant de la banque est rangé dans la "session"
 			return redirect('prof.views.banque')	# pour être sortie dans vue qui s'appelle "banque."
 	
-	formNQCM = NouveauQCM()
-	formBanque = ChoixBanque()	#
-	formChoix = QCMChoix()	# Liste de choix dont les options doivent encore être précisées.
-	
+	formNQCM = NouveauQCM()		# formulaire par lequel l'utilisateur peut saisir le titre d'un nouveau qcm.
+	formBanque = ChoixBanque()	# Liste de choix de banques dont les options doivent encore être précisées.
+	formChoix = QCMChoix()	# Liste de choix de qcm dont les options doivent encore être précisées.
 	
 	formNouvelleBanque = AjouterBanque()
 
