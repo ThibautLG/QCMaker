@@ -339,7 +339,7 @@ def qcmaker(request):
 	#on remplit la liste des banques du qcm		
 	listebanquesqcmtemp = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
 	listebanquesqcm=list()
-	for nb in listebanquesqcmtemp: 
+	for nb in listebanquesqcmtemp:
 	# Pour chaque banque est faite un formulaire qui permet à l'utilisateur de l'effacer.
 		tform=EffacerBanque(initial={'banqueaeff':nb.id})
 		listebanquesqcm.append({'nom':nb.banque.nom,'nb':nb.nb,'formDel':tform})

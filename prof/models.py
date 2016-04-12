@@ -68,7 +68,7 @@ class CoreQcmPdf(models.Model):
 		note = 0.0
 		for qexo in sorted(CoreExoQcmPdf.objects.filter(qcmpdf=self), key=lambda r: int(r.position)):
 			for reponse in sorted(qexo.exo.corereponse_set.all(), key=lambda r: int(r.position)):
-				try:	
+				try:
 					# rqe: Le "nom" de la réponse est une étiquette qui indique la valeur d'une réponse.
 					# Les étiquettes utilisées sont "v" (vrai) et "f" (faux)
 					nbreponses[reponse.nom]+=int(self.reponses[irep])
