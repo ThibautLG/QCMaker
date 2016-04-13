@@ -1,16 +1,22 @@
 #-*- coding:utf-8 -*-
 
+# Ce fichier classe tous les formulaires dont on disponse.
+# Un formulaire permet à l'utilisateur d'envoyer des données qu'on traite dans le code.
+# En fait, les formulaires sont tous faits avec html.
+# mais avec Django on peut faire un code Python plutôt court, avec lequel est produit le code HTML.
+# Dans les vues est décrit a à remplir quel formulaire et quand, et comment les données obtenues sont traitées.
+
 from django import forms
 
 class AjouterBanque(forms.Form):
-
+	# Avec ce formulaire un enseignant un enseignant peut faire une nouvelle banque.
 	nouvellebanque = forms.CharField(label="",initial="Nouvelle banque")
 
 class ChoixBanque(forms.Form):
-	
+	# Un enseignant peut choisir une banque parmi celles qui figurent dans listeChoix.
 	def setListe(self,listeChoix):
 		self.fields['banque'] = forms.ChoiceField(label="",choices=listeChoix)
-		
+		# Précise les options qui apparaîssent devant l'utilisateur. 
 	banque = forms.ChoiceField()
 
 class MakexoMain(forms.Form):
@@ -18,8 +24,8 @@ class MakexoMain(forms.Form):
 	def setFields(self,exo):
 		self.fields['question'] = forms.CharField(initial=exo.question,label="",widget=forms.Textarea)
 		self.fields['corrige'] = forms.CharField(initial=exo.corrige,label="",widget=forms.Textarea,required=False)
-		self.fields['question'].widget.attrs['cols']=u'100%'
-		self.fields['corrige'].widget.attrs['cols']=u'100%'
+		self.fields['question'].widget.attrs['cols']=u'100%'	# deux commandes pour la mise en forme du formulaire
+		self.fields['corrige'].widget.attrs['cols']=u'100%'	
 		self.fields['idmainexo'] = forms.IntegerField(widget=forms.HiddenInput(),initial=exo.id)
 
 	idmainexo =  forms.IntegerField()

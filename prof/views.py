@@ -16,6 +16,15 @@ import prof.imp as imp
 
 
 def is_prof(nom):
+	"""
+	entrée:		la chaîne d'un nom d'un enseignant
+	sortie:		vrai ssi le nom est le nom d'un des enseignant de math.
+	
+	Cette méthode est utilisé pour accorder à l'utilisateur certains droits d'accès.
+	Ainsi, on décide si un l'utilisateur a le droit d'agir comme un prof ssi:
+	is_prof(str(request.user.username))
+	"""
+	
 	listeprof=['tle-gouic','jliandrat','cpouet','gchiavassa']
 	if nom in listeprof:
 		return True
@@ -24,111 +33,172 @@ def is_prof(nom):
 
 
 def genererCSVnotes(qcm):
-	dossier="media/ups/"+str(qcm.prof.id)+"/"+str(qcm.id)+"/"
-	codes=range(100000)
-	random.seed(float('0.'+str(qcm.id)))
-	random.shuffle(codes)
-	random.shuffle(codes)
-	random.shuffle(codes)
+	
+	"""
+	Entrée: 	Un objet de type CoreQcm.
+	Sorie:		comme "produit secondaire", un chemin d'accès pour le fichier de notes.
+	
+	Met à jour le fichier de notes du qcm de l'enseignqnt. 
+	Le fichier est un tableau dont les lignes sont agencées comme suit:
+	numéro de qcm,    nom_élève,    note_élève
+	Si les corrigés pour le qcm ne sont pas dans la base de données, il ne se passe rien.
+	"""
+	dossier="media/ups/"+str(qcm.prof.id)+"/"+str(qcm.id)+"/"  
+	codes=range(100000)			# Ces cinq lignes donnent un ensemble des codes liés à la qcm.  
+	random.seed(float('0.'+str(qcm.id)))  	
+	random.shuffle(codes)		
+	random.shuffle(codes)			
+	random.shuffle(codes)			# QUESTION: Quel est l'intérêt de cette manip? C'est un verrouillement?
 	listecopies=[qcmpdf for qcmpdf in qcm.coreqcmpdf_set.all() if qcmpdf.reponses != ""]
 	fichierCSV=io.FileIO(dossier+"notes.csv",'w')
-	for qcmpdf in listecopies:
+	for qcmpdf in listecopies:		
 		fichierCSV.write(str(codes[qcmpdf.numero])+","+qcmpdf.corecopie_set.all()[0].eleve.nom.encode('ascii','replace')+","+str(qcmpdf.getnote()))
-		fichierCSV.write("\n")
+		fichierCSV.write("\n")		
 	fichierCSV.close()
 	return str(dossier+"notes.csv")
 	
 def telecharger(request,objet):
-	if isinstance(objet,models.FileField):
-		the_file = objet.path
+	"""
+	entrée:		une requête qui provient d'un utilisateur
+			un fichier à télécharger où son chemin (comme chaîne ou en unicode)
+	sortie:		une réponse qui laisse l'utilisateur télécharger le fichier
+	
+	A aussi pour effet d'ajouter des informations à la bibliothèque META sur le fichier.
+	"""
+	if isinstance(objet,models.FileField):  # Fait en sorte que la fonction puisse gérer trois types.
+		the_file = objet.path		# un fichier comme attribut, et deux types de chaînes.
 	elif isinstance(objet,str):
 		the_file = objet
 	elif isinstance(objet,unicode):
 		the_file = objet
 	filename = os.path.basename(the_file)
+	#QUESTION. Qu'est-ce qui se passe dans cette ligne?
 	response = HttpResponse(FileWrapper(open(the_file)),
 				content_type=mimetypes.guess_type(the_file)[0])
-	response['Content-Length'] = os.path.getsize(the_file)    
+	response['Content-Length'] = os.path.getsize(the_file)
 	response['Content-Disposition'] = "attachment; filename=%s" % filename
 	return response
    
-
 def svg(request,id_svg, prefix):
+	"""
+	entrée:		une requête
+			l'identifiant de l'exo / de l'en-tête de QCM que l'utilisateur veut voir
+			une chaîne, "1" si l'utilisateur veut voir un exo, "2" s'il veut voir une entête de QCM.
+	sortie:		Une réponse qui consiste à charger du fichier qu'il veut:
+				-Si l'utilisateur a le droit d'accéder aux fichiers qu'il veut voir
+				-Si le téléchargement n'échoue pas.
+			Une réponse qui lui montre le message "non disponible" autrement.
+	"""
 	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom = str(request.user.username)
-	if prefix == '1':
+	if prefix == '1':		
 		prefix = "exo"
 	elif prefix == '2':
 		prefix = "qcm-prev"
 	try:
 		try:
+			# D'abord on essaie de traiter l'utilisateur en admettant que ce soit un enseignant.
 			pr = Enseignant.objects.get(nom=nom)
 			svg = "media/ups/"+str(pr.id)+"/"+prefix+"-"+str(id_svg)+".svg"
 		except:
-			try:
+			try:	
+				# En cas d'échec on essaie de le traiter comme un élève.
 				el = Eleve.objects.get(nom=nom)
 				exo = CoreExo.objects.get(id=int(id_svg))
 				ok = False
-				for copie in el.corecopie_set.all():
+				for copie in el.corecopie_set.all():	# parcours des copies de l'élève reconnu.
+				# si l'exo que l'élève veut voir fait l'objet d'une QCM qu'il a rempli, OK
 					if exo in copie.qcmpdf.exos.all():
 						ok = True
 				if ok:
 					svg = "media/ups/"+str(exo.banque.prof.id)+"/"+prefix+"-"+str(id_svg)+".svg"
 			except Exception,er:
-				print('Erreur svg: '+str(er))
-				return HttpResponse("Non disponible")
+				print('Erreur svg: '+str(er))  
+				return HttpResponse("Non disponible") # ce qui s'affiche pour l'utilisateur
+				
+				
 		return telecharger(request,svg)
+		# "return" ci-dessus atteint si l'utilisateur est reconnu en tant qu'élève ayant le droit de voir l'exo.
 	except Exception, er:
+		# si telecharger(request,svg) échoue l'utilisateur est mis au courant.
+		# QUESTION: C'est le seul cas ou on entre dans cet "except"?
 		print("Erreur : ",er)
 		return HttpResponse("Non disponible")
 	
 
 def image(request,id_cc,page):
 	
+	"""
+	entrée:		requête (provenant soit par un élève, soit par un enseignant.)
+			l'identifiant d'une copie, faite par une élève, que l'utilisateur veut voir.
+			le numéro de la page que l'utilisateur veut voir.
+	sortie:		réponse aboutissant soit téléchargement si l'utilisateur y le droit, soit un refus d'accès.
+	
+	Démarre le téléchargement de la copie si l'utilisateur est un élève et a donné l'identifiant d'une de ses copies.
+	Tout enseignant est habilité à voir tous les copies.
+	"""
+	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
-	id_cc = int(id_cc)
+	id_cc = int(id_cc)  # id_cc = l'identifiant de CoreCopie
 	page = int(page)
-	try:
-		el=Eleve.objects.get(nom=nom)
-		cc=CoreCopie.objects.get(id=id_cc)
+	try:	
+		el=Eleve.objects.get(nom=nom)  		# (étiquette:XX1)  récupère l'élève qui porte le nom de l'utilisateur.
+		cc=CoreCopie.objects.get(id=id_cc) 	# (étiquette:XX1)
 		if el==cc.eleve:
+			# téléchargement permis si (l'élève ayant le nom de l'utilisateur) = (élève à qui appartient la copie)
 			return telecharger(request,cc.getpage(page))
 		else:
 			raise Exception(el.nom,cc.eleve.nom)
+			# Sinon lever une exception qui nous envoie dans le "except" ci-dessous.
+			
 	except:
-		try:
+		try:	
+			# Si l'erreur vient de XX1, alors c'est peut-être un enseignant.
 			pr=Enseignant.objects.get(nom=nom)
 			cc=CoreCopie.objects.get(id=id_cc)
 			if pr==cc.qcmpdf.qcm.prof:
 				return telecharger(request,cc.getpage(page))
 		except Exception, er:
+			# on affiche "non disponible" les données voulues sont introuvables.
+			# ou si le téléchargement plus haut échoue.
 			print("Erreur : ",er)
-			return HttpResponse("Non disponible")
+			return HttpResponse("Non disponible") 
 	
 	
-def ehome(request):
+def ehome(request):	# La page d'accueil pour les élèves.
+
+	"""
+	entrée:		Une requête (provenant d'un élève)
+	sortie:		réponse qui lui permet de voir la copie qu'il voulait voir.
+	
+	Cette vue est censé être à la base de la page d'accueil pour les élèves. 
+	
+	Elle permet à un élève de voir sa copie en le saisissant dans une boite.
+	Si jamais une erreur se produit, suite à la saisie de l'élève, il en est mis au courant,
+	au moyen d'un des messages d'erreur, suivant ce qui empêche l'affichage de sa copie.
+	"""
 	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
-	el,nouveleleve=Eleve.objects.get_or_create(nom=nom)
+	el,nouveleleve=Eleve.objects.get_or_create(nom=nom)	# nouveleleve vaut True ssi el a été créé.
 	if request.method == 'POST':
-		formAssign=AssignerCopie(request.POST)
-		if formAssign.is_valid():
-			try:
+		formAssign=AssignerCopie(request.POST)		# laisse l'élève saisir un numéro de copie
+		if formAssign.is_valid():			# Si l'utilisateur n'a pas saisi n'importe quoi
+			try:	# Ce "try" récupère tout le jeu de données qui se rattache au numéro saisi. 
 				qcmid,numcopie=formAssign.cleaned_data['numcopie'].split('-')
-				qcmid=int(qcmid)
-				numcopie=int(numcopie)
-				codes=range(100000)
-				random.seed(float('0.'+str(qcmid)))
+				qcmid=int(qcmid)		# Ici le numéro qu'il rentre est coupé en deux.
+				numcopie=int(numcopie)		
+				codes=range(100000)		# encore ces cinq lignes décrites au début.
+				random.seed(float('0.'+str(qcmid))) # Sert à trouver le bon code.		
+				random.shuffle(codes)		
 				random.shuffle(codes)
 				random.shuffle(codes)
-				random.shuffle(codes)
-				numcopie = codes.index(numcopie)
+				numcopie = codes.index(numcopie)	
 				qcm = CoreQcm.objects.get(id=qcmid)
 				qcmpdf = CoreQcmPdf.objects.get(qcm=qcm,numero=numcopie)
 				try:
@@ -145,32 +215,53 @@ def ehome(request):
 					print("Erreur : ",er)
 					err='2'
 			except:
-				err='1'
+				err='1'		#  veut dire "numéro incorrect."
+			try:
+				if not [cc for cc in el.corecopie_set.all() if cc.qcmpdf.qcm==qcm]: #(si la liste n'est pas vide)
+					cp=CoreCopie.objects.get(qcmpdf=qcmpdf)
+					if cp.eleve==Eleve.objects.get(nom="Élève non associé"):
+						cp.eleve=el
+						cp.save()
+				# Bref, si l'élève n'a pas de copie pour le qcm déduit de la saisie, 
+				# on l'associe à la copie s'il n'est pas déjà associé à une autre copie. 
+					else:
+						err='3' 	# veut dire "copie déjà assignée à un autre élève."
+				 
+				else:
+					err='4'		#  veut dire "Vous avez déjà une copie assignée pour ce QCM."	
+			except Exception, er:
+				print("Erreur : ",er)
+				err='2'		# veut dire "copie non-corrigé ou inexistante."
 
 	#creation de la liste des copies de l'élève
 	listecps  = list()
-	for cp in [cc for cc in CoreCopie.objects.all() if cc.eleve == el]:
+	for cp in [cc for cc in CoreCopie.objects.all() if cc.eleve == el]:	# 
 		tform = VoirCopie(initial={'idcopieavoir':cp.id})
 		listecps.append({'id':cp.id,'note':cp.qcmpdf.getnote(),'nom':cp.qcmpdf.qcm.nomTeX,'formvoir':tform})
-	formAssign=AssignerCopie()
+	formAssign=AssignerCopie()	# Que fait donc ce formulaire vide à la fin?
 	return render(request, 'ehome.html', locals())
 	
 def home(request):
+	
+	"""
+	Cette vue est censé être à la base de la page d'accueil pour les enseignants. 
+	"""
 
-	if not request.user.is_active:
+	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
 		return redirect('django_cas.views.login')
-	nom=str(request.user.username)
+	nom=str(request.user.username)	
 	print(nom)
-	if not is_prof(nom):
-		return redirect('prof.views.ehome')
+	if not is_prof(nom):	# Si l'utilisateur n'est pas d'enseignant alors il est traité comme élève.
+		return redirect('prof.views.ehome')		
 	pr,nouveauprof = Enseignant.objects.get_or_create(nom=nom)
 	if nouveauprof:
 		try:
-			os.mkdir('media/ups/'+str(pr.id))
+			os.mkdir('media/ups/'+str(pr.id)) # tentative de créer un dossier.
 		except:
 			print('Erreur lors de la création du nouveau dossier prof')
 
 	dossier = 'media/ups/'+str(pr.id)
+	# Récupère des données issues d'un formulaire qui a été rempli par l'utilisateur.
 	formNouvelleBanque = AjouterBanque(request.POST)
 	formBanque = ChoixBanque(request.POST)
 	formEffacerQCM = EffacerQCM(request.POST)
@@ -179,14 +270,15 @@ def home(request):
 	listebanques=list()
 	for banq in listebanquestemp:
 		listebanques.append((banq.id,banq.nom))
-	formBanque.setListe(listebanques)	
-		
-	if request.method == 'POST':
-		if formBanque.is_valid():
-			print('ok?')
+	formBanque.setListe(listebanques) # Cette ligne définit l'éventail de banques
+						# L'utilisateur doit en chosir une.
+	if request.method == 'POST':	# Si la requête a pour but de modifier
+		if formBanque.is_valid(): 	# Si l'utilisateur a bien choisi sa banque.
+			print('ok')		
 			request.session['banque'] = formBanque.cleaned_data['banque']
 			return redirect('prof.views.banque')
-		elif formNouvelleBanque.is_valid():
+			# L'utilsateur 
+		elif formNouvelleBanque.is_valid():	# Si ce formulaire est bien rempli.
 			print(pr)
 			banque,creation = CoreBanque.objects.get_or_create(prof=pr,nom=formNouvelleBanque.cleaned_data['nouvellebanque'])
 			banque.save()
@@ -237,82 +329,99 @@ def home(request):
 		listebanques.append((banq.id,banq.nom))
 	formBanque.setListe(listebanques)	
 		
-	
 	return render(request, 'home.html', locals())
 
 def qcmaker(request):
 	
-	if not request.user.is_active:
+	"""
+	Quand la commande de généerer un qcm a été donné, l'utilisateur entre dans qcmanage.
+	Si l'utilisateur ne s'est pas encore logué il est renvoyé sur la page ou il peut le faire.
+	Ensuite, si l'utilisateur est parait etre un éleve, il est renvoyé sur la page d'accueil des éleves.
+	Si l'utilisateur est un enseignant, alors il peut démarrer la génération d'un qcm (a préciser)
+	Pour ce faire il doit rentrer une suite de nombres de paquets de versions. (par ex. 10,20,15)
+	Il a aussi a préciser un qcm, soit en en créant un, soit en choisissant un des qcm de la banque.
+	Quand une erreur se produit, l'enseignant rentre souvent dans la page d'accueil, pour recommencer.
+	Si tout va bien, et les conditions plus haut ne sont pas remplies, 
+	l'utilisateur atterrit dans la page d'accueil, la génération du qcm démarré.  
+	"""
+	
+	if not request.user.is_active:	# On dit à l'utilisateur de se loguer s'il ne l'a pas fait.
 		return redirect('django_cas.views.login')
 	nom=str(request.user.username)
-	if not is_prof(nom):
+	if not is_prof(nom):	# Si l'utilisateur n'est pas d'enseignant il est renvoyé sur la page d'accueil des élèves.
 		return redirect('prof.views.ehome')
-		
-
 	
 	pr=Enseignant.objects.get(nom=nom)
 	dossier = 'media/ups/'+str(pr.id)
 
-	#on charge tous les formulaires
-	formGenerer = Generer(request.POST)
-	formNQCM = NouveauQCM(request.POST) 
-	formNEntete = Entete(request.POST)
+	# On charge tous les formulaires 
+	# Il s'agit d'un formulaire dans lequel l'utilisateur...
+	formGenerer = Generer(request.POST) # précise les tailles des paquets d'une meme version.	
+	formNQCM = NouveauQCM(request.POST) # précise le titre du nouveau QCM qu'il veut faire. 
+	formNEntete = Entete(request.POST)  # décrit l'en-tete, dans lequel figurent un nom suivi d'un texte.	
 
 	#on remplit la liste des QCMs (pour tester le formulaire de choix de QCM)
 	listeqcms = sorted(pr.coreqcm_set.all(), key=lambda r: int(r.id),reverse=True)
 	listeChoix = list()
 	for lqcm in listeqcms:
 		listeChoix.append((lqcm.id,lqcm.nom))
-	formChoix = QCMChoix(request.POST)
-	formChoix.setListe(listeChoix)
-	formTelecharger = Telecharger(request.POST)
-	formEffacer = Effacer(request.POST)
+	formChoix = QCMChoix(request.POST)	# L'utilisateur choisit un qcm parmi celles dans la liste.
+	formChoix.setListe(listeChoix)		
+	formTelecharger = Telecharger(request.POST) 	# formulaire vieilli 	
+	formEffacer = Effacer(request.POST)		# formulaire vieilli 	
 	
-	#on remplit la liste des banques d'exos
-	formAjoutBanque = ChoixBanqueQCM(request.POST)
-	listebanquestemp=pr.corebanque_set.all()
+	#on remplit la liste des banques d'exos		
+	formAjoutBanque = ChoixBanqueQCM(request.POST)	# récupère le choix de banque.
+	listebanquestemp=pr.corebanque_set.all()	
 	listebanques=list()
-	for banq in listebanquestemp:
+	for banq in listebanquestemp:			
 		listebanques.append((banq.id,banq.nom))
-	formAjoutBanque.setListe(listebanques)
+	formAjoutBanque.setListe(listebanques)		# fixe l'ensemble de banques dans lequel le choix se fait.
 
 	formDel=EffacerBanque(request.POST)
-	if request.method == 'POST':  # S'il s'agit d'une requête POST
+	if request.method == 'POST':  # S'il s'agit d'une requête qui vise à modifier.
 	
 		#si nouveau QCM
-		if formNQCM.is_valid():
+		if formNQCM.is_valid():		
 			qcm,creation=CoreQcm.objects.get_or_create(prof=pr,nom=formNQCM.cleaned_data["titre"])
-			if creation:
-				qcm.save()
-			request.session['qcm']=qcm.id
+			# récupère le qcm avec le nom saisi dans le formulaire, et crée s'il n'y en a pas.  
+			if creation:	
+				qcm.save()	# sauvegarde le qcm s'il vient d'être créé.
+			request.session['qcm']=qcm.id	# sauvegarde de l'identifiant du qcm
+			# Le morceau ci-dessous regarde si une erreur de produit pendu le rendu des formules.
 			errtex = core.genererSvgQcm(qcm,dossier)
 			if not errtex == 0:
 				qcm.erreurtex = True
 			else: 
 				qcm.erreurtex = False
-			qcm.save()
+			qcm.save()	# Sauvegarde de du booléen qui q été fait. 
 		
 		#si QCM existant
 		elif formChoix.is_valid():
 			print('Formulaire de choix de QCM valide')
-			try:
+			try:	# tentative de récupérer le qcm voulu
 				qcm=CoreQcm.objects.get(prof=pr,id=int(formChoix.cleaned_data['qcm']))
-				request.session['qcm']=qcm.id
-			except Exception, er:
+				request.session['qcm']=qcm.id	# sauvegarde de l'identifiant trouvé.
+			except Exception, er:		
 				print("Erreur : ",er)
-				return redirect('prof.views.home')	
+				return redirect('prof.views.home')
+				# Si le qcm n'a pas été trouvé l'utilisateur retombe sur la page d'accueil.
 
 		#si suppression de banque d'exo du qcm
 		elif formDel.is_valid():
+			
 			print('On efface un nbexos')
+			# On répère l'objet que l'utilisateur voulait effacer.
 			td=CoreNbExos.objects.get(id=formDel.cleaned_data['banqueaeff'])
-			td.delete()
+			td.delete() # Enlevement de la base de données de cet objet.
+			#d  L'objet est de type nbexos et établit une liaison entre une banque et un qcm.
 			
 		#si ajout de banque
 		elif formAjoutBanque.is_valid():
+			# 
 			qcm=CoreQcm.objects.get(id=request.session['qcm'])
 			nbanque=CoreBanque.objects.get(prof=pr,id=formAjoutBanque.cleaned_data['banque'])
-			nbexos=formAjoutBanque.cleaned_data['nbexos']
+			nbexos=formAjoutBanque.cleaned_data['nbexos'] # le nombre d'exos rentré.
 			n=CoreNbExos(qcm=qcm,banque=nbanque,nb=nbexos,position=len(qcm.nbexos.all())+1)
 			n.save()
 		
@@ -359,12 +468,13 @@ def qcmaker(request):
 		return redirect('prof.views.qcmanage')
 
 	#on remplit la liste des banques d'exos
-	formAjoutBanque = ChoixBanqueQCM()
+	formAjoutBanque = ChoixBanqueQCM()		# formulaire vide pour que le prof puisse choisir une banque
 	listebanquestemp=pr.corebanque_set.all()
 	listebanques=list()
 	for banq in listebanquestemp:
 		listebanques.append((banq.id,banq.nom))
-	formAjoutBanque.setListe(listebanques)
+	formAjoutBanque.setListe(listebanques)		
+	# grace a cette ligne le prof peut choisir entre toutes les banques qui lui appartiennent.
 
 	#on remplit la liste des banques du qcm		
 	listebanquesqcmtemp = sorted(CoreNbExos.objects.filter(qcm=qcm), key=lambda r: int(r.id))
@@ -378,11 +488,19 @@ def qcmaker(request):
 	try:
 		formGenerer.erreurici
 	except Exception,er:
-		formGenerer = Generer()
+		formGenerer = Generer()			
 	return render(request, 'qcmaker.html', locals())
 
 	
 def qcmanage(request):
+	
+	"""
+	Cette page est peut etre atteinte par un utilisateur quand il vient de démarrer la génération d'un qcm.
+	
+	Quand il y entre on regarde d'il est encore sur son compte (dans le cas contraire il doit se loguer)
+	et on regarde s'il est vraiment un enseignant (sinon il rentre dans le page d'accueil des élèves.)
+	
+	"""
 	
 	if not request.user.is_active:
 		return redirect('django_cas.views.login')
@@ -407,8 +525,10 @@ def qcmanage(request):
 			return telecharger(request,dossier+'/'+str(qcm.id)+'/originaux/'+formTelecharger.cleaned_data['fichieratel'])
 		#si upload de copie
 		elif formAjoutCopies.is_valid():
+			# un nouvel objet copie est faite avec les données saisies. 
 			cps=CoreCopies(qcm=qcm,fichier=formAjoutCopies.cleaned_data['fichiercp'],nom=str(formAjoutCopies.cleaned_data['fichiercp']))
-			cps.save()
+			# la copie est corrigé en tache de fond.
+			cps.save()	# les copies sont sauvegardées.
 			try:
 				BgJob(core.correctionCopies,(qcm.id,cps))
 			except Exception, er:
